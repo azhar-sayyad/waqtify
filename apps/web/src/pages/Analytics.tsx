@@ -1,258 +1,373 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useHabitStore } from '../stores/habitStore';
-import { formatISO, subDays, getDay, differenceInDays } from 'date-fns';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Flame, Trophy, CheckCircle2, Info } from 'lucide-react';
-import { Button } from '@waqtify/ui';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  Cell, PieChart, Pie, Legend,
+} from 'recharts';
+import { Flame, Trophy, CheckCircle2, Info, BarChart2, Download } from 'lucide-react';
+import { Button, StatCard, SectionHeader, Badge } from '@waqtify/ui';
+import { ActivityHeatmap } from '../components/ActivityHeatmap';
+import { HabitLeaderboard } from '../components/HabitLeaderboard';
+import { WeeklyProgressChart } from '../components/WeeklyProgressChart';
 
+// ─── Date range options ────────────────────────────────────────────────────
+type DateRange = 30 | 90 | 365;
+
+const DATE_RANGE_OPTIONS: { label: string; value: DateRange }[] = [
+  { label: '30d', value: 30 },
+  { label: '90d', value: 90 },
+  { label: '1yr', value: 365 },
+];
+
+// ─── Custom tooltip for Bar Chart ─────────────────────────────────────────
+function BarTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-card border border-border rounded-xl shadow-lg p-3 text-sm">
+      <p className="font-bold text-foreground mb-1">{label}</p>
+      <p className="text-destructive font-semibold">{payload[0].value} misses</p>
+    </div>
+  );
+}
+
+// ─── Pie chart custom label ────────────────────────────────────────────────
+function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) {
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  if (percent < 0.07) return null;
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+}
+
+// ─── Pie chart palette ─────────────────────────────────────────────────────
+const PIE_COLORS = [
+  'hsl(265 90% 72%)',
+  'hsl(142 70% 50%)',
+  'hsl(38 92% 55%)',
+  'hsl(199 89% 55%)',
+  'hsl(330 80% 62%)',
+  'hsl(25 90% 55%)',
+  'hsl(175 70% 45%)',
+];
+
+// ─── Analytics Page ────────────────────────────────────────────────────────
 export function Analytics() {
-  const { habits, logs, calculateStreak, calculateLongestStreak } = useHabitStore();
+  const { habits, logs, calculateStreak, calculateLongestStreak, getMissedDayStats, getHabitLeaderboard, getWeeklyStats } = useHabitStore();
+  const [dateRange, setDateRange] = useState<DateRange>(30);
 
-  // ----- KPI CALCULATIONS -----
-  const { totalCompleted, maxCurrentStreak, maxLongestStreak } = useMemo(() => {
-    let completed = 0;
-    let maxCurrent = 0;
-    let maxLongest = 0;
+  // ── KPI calculations ──────────────────────────────────────────────────
+  const kpis = useMemo(() => {
+    let totalCompleted = 0;
+    let maxCurrentStreak = 0;
+    let maxLongestStreak = 0;
 
     habits.forEach(h => {
       const hLogs = logs[h.id] || [];
-      completed += hLogs.filter(l => l.completed).length;
-      maxCurrent = Math.max(maxCurrent, calculateStreak(h.id));
-      maxLongest = Math.max(maxLongest, calculateLongestStreak(h.id));
+      totalCompleted += hLogs.filter(l => l.completed).length;
+      maxCurrentStreak = Math.max(maxCurrentStreak, calculateStreak(h.id));
+      maxLongestStreak = Math.max(maxLongestStreak, calculateLongestStreak(h.id));
     });
 
-    return { totalCompleted: completed, maxCurrentStreak: maxCurrent, maxLongestStreak: maxLongest };
-  }, [habits, logs, calculateStreak, calculateLongestStreak]);
+    // Overall completion rate for the selected window
+    let totalPossible = 0;
+    let totalDone = 0;
+    const cutoffStr = new Date(Date.now() - dateRange * 86400000).toISOString().slice(0, 10);
 
-  // ----- HEATMAP DATA (Last 140 days = 20 weeks) -----
-  const heatmapDays = useMemo(() => {
-    const days = [];
-    const today = new Date();
-    // Shift start date to a Sunday so the grid aligns nicely if needed, or just flat 140 days
-    for (let i = 139; i >= 0; i--) {
-      const targetDate = subDays(today, i);
-      const dateStr = formatISO(targetDate, { representation: 'date' });
-      
-      let intensity = 0;
-      habits.forEach(h => {
-        if (logs[h.id]?.find(l => l.date === dateStr && l.completed)) intensity++;
-      });
-      
-      days.push({ 
-        date: dateStr, 
-        intensity, 
-        label: targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric'}) 
-      });
-    }
-    return days;
-  }, [habits, logs]);
+    habits.forEach(h => {
+      const hLogs = logs[h.id] || [];
+      const recent = hLogs.filter(l => l.date >= cutoffStr);
+      totalDone += recent.filter(l => l.completed).length;
+      totalPossible += dateRange;
+    });
 
-  const maxHeatmapIntensity = Math.max(1, ...heatmapDays.map(d => d.intensity));
+    const overallRate = totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
 
-  // ----- HABIT COMPLETION (Last 30 Days) -----
-  const habitCompletionStats = useMemo(() => {
-    const today = new Date();
+    return { totalCompleted, maxCurrentStreak, maxLongestStreak, overallRate };
+  }, [habits, logs, calculateStreak, calculateLongestStreak, dateRange]);
+
+  // ── Missed days data ──────────────────────────────────────────────────
+  const missedDaysData = useMemo(() => getMissedDayStats(dateRange), [getMissedDayStats, dateRange]);
+  const worstDay = useMemo(
+    () => [...missedDaysData].sort((a, b) => b.misses - a.misses)[0],
+    [missedDaysData]
+  );
+
+  // ── Leaderboard data ──────────────────────────────────────────────────
+  const leaderboard = useMemo(() => getHabitLeaderboard(dateRange), [getHabitLeaderboard, dateRange]);
+
+  // ── Pie chart: per-habit completion share (last N days) ───────────────
+  const pieData = useMemo(() => {
+    const cutoffStr = new Date(Date.now() - dateRange * 86400000).toISOString().slice(0, 10);
     return habits.map(h => {
-      const hLogs = logs[h.id] || [];
-      const thirtyDaysAgoStr = formatISO(subDays(today, 30), { representation: 'date' });
-      const recentLogs = hLogs.filter(l => l.date >= thirtyDaysAgoStr);
-      
-      const creationDateLog = [...hLogs].sort((a,b) => a.date.localeCompare(b.date))[0];
-      let maxPossibleDays = 30;
-      
-      if (creationDateLog && creationDateLog.date > thirtyDaysAgoStr) {
-         maxPossibleDays = differenceInDays(today, new Date(creationDateLog.date)) + 1;
-      }
-      
-      const compCount = recentLogs.filter(l => l.completed).length;
-      const percentage = maxPossibleDays > 0 ? Math.round((compCount / maxPossibleDays) * 100) : 0;
+      const completed = (logs[h.id] || []).filter(l => l.date >= cutoffStr && l.completed).length;
+      return { name: h.name, value: completed };
+    }).filter(d => d.value > 0);
+  }, [habits, logs, dateRange]);
 
-      return {
-        id: h.id,
-        name: h.name,
-        percentage: Math.min(percentage, 100)
-      };
-    }).sort((a, b) => b.percentage - a.percentage);
-  }, [habits, logs]);
+  // ── Weekly progress line chart ────────────────────────────────────────
+  const weeklyProgress = useMemo(() => getWeeklyStats(Math.min(dateRange, 30)), [getWeeklyStats, dateRange]);
 
-  // ----- MISSED DAYS TRACKER (Last 30 Days) -----
-  const missedDaysData = useMemo(() => {
-    const weekCounts = [0, 0, 0, 0, 0, 0, 0]; // Sun to Sat
-    const todayStr = formatISO(new Date(), { representation: 'date' });
-    const thirtyDaysAgoStr = formatISO(subDays(new Date(), 30), { representation: 'date' });
-
-    habits.forEach(h => {
-       const hLogs = logs[h.id] || [];
-       hLogs.filter(l => l.date >= thirtyDaysAgoStr && l.date <= todayStr && !l.completed).forEach(log => {
-          const dayIndex = getDay(new Date(log.date));
-          weekCounts[dayIndex]++;
-       });
-    });
-
-    const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    // Shift to start on Monday for intuitive display
-    return [
-      { name: "Mon", misses: weekCounts[1] },
-      { name: "Tue", misses: weekCounts[2] },
-      { name: "Wed", misses: weekCounts[3] },
-      { name: "Thu", misses: weekCounts[4] },
-      { name: "Fri", misses: weekCounts[5] },
-      { name: "Sat", misses: weekCounts[6] },
-      { name: "Sun", misses: weekCounts[0] }
-    ];
-  }, [habits, logs]);
-
-  const maxMissedDay = [...missedDaysData].sort((a, b) => b.misses - a.misses)[0];
+  const hasData = habits.length > 0;
 
   return (
-    <div className="w-full flex flex-col gap-6 animate-in fade-in duration-500 pb-16">
-      
-      {/* Header */}
-      <section className="flex items-end justify-between gap-4 border-b border-border/50 pb-6">
-        <div>
-          <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-2">Insights Engine</p>
-          <h1 className="text-3xl font-extrabold tracking-tight">Consistency Overview</h1>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" size="sm" className="hidden sm:flex text-xs h-9">Last 30 Days</Button>
-          <Button size="sm" className="text-xs h-9 shadow-md">Export Report</Button>
-        </div>
-      </section>
+    <div className="w-full flex flex-col gap-8 animate-in fade-in duration-500 pb-10">
 
-      {/* KPI Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-           <CheckCircle2 className="absolute -right-4 -bottom-4 w-32 h-32 text-muted/10" />
-           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Total Completed</p>
-           <p className="text-4xl font-black mb-4">{totalCompleted.toLocaleString()}</p>
-           <p className="text-xs text-primary font-semibold flex items-center gap-1">
-             <span className="w-2 h-2 rounded-full bg-primary/20 flex items-center justify-center">
-               <span className="w-1 h-1 rounded-full bg-primary"></span>
-             </span>
-             Cumulative actions taken
-           </p>
-        </div>
-        <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-           <Flame className="absolute -right-4 -bottom-4 w-32 h-32 text-muted/10" />
-           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Current Streak</p>
-           <p className="text-4xl font-black mb-4">{maxCurrentStreak} Days</p>
-           <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-             <Flame className="w-3.5 h-3.5 text-orange-500" />
-             Active momentum across modules
-           </p>
-        </div>
-        <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-           <Trophy className="absolute -right-4 -bottom-4 w-32 h-32 text-muted/10" />
-           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Longest Streak</p>
-           <p className="text-4xl font-black mb-4">{maxLongestStreak} Days</p>
-           <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-             <Trophy className="w-3.5 h-3.5 text-yellow-500" />
-             Historical maximum performance
-           </p>
-        </div>
-      </section>
-
-      {/* Consistency Heatmap */}
-      <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-           <h3 className="font-bold tracking-tight">Consistency Heatmap</h3>
-           <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-             <span>Less</span>
-             <div className="flex gap-1">
-               <div className="w-3 h-3 rounded-sm bg-secondary"></div>
-               <div className="w-3 h-3 rounded-sm bg-primary/30"></div>
-               <div className="w-3 h-3 rounded-sm bg-primary/60"></div>
-               <div className="w-3 h-3 rounded-sm bg-primary"></div>
-             </div>
-             <span>More</span>
-           </div>
-        </div>
-        
-        {/* Responsive horizontal scroll for heatmap */}
-        <div className="w-full overflow-x-auto pb-4">
-          <div className="grid grid-cols-[repeat(20,minmax(0,1fr))] grid-rows-7 gap-[3px] min-w-[700px]">
-            {/* Because the grid is fixed rows-7, mapping left to right involves CSS column flow */}
-            {heatmapDays.map((day, i) => {
-              // Calc opacity level (0 = bg-primary/5, otherwise steps to 1)
-              let alpha = day.intensity === 0 ? 0 : 0.2 + (day.intensity / maxHeatmapIntensity) * 0.8;
-              if (alpha > 1) alpha = 1;
-
-              return (
-                <div 
-                  key={day.date} 
-                  className="aspect-square rounded-[3px] transition-all hover:scale-110 cursor-pointer relative group"
-                  style={{ backgroundColor: day.intensity === 0 ? 'var(--secondary)' : `hsl(var(--primary) / ${alpha})` }}
-                >
-                   {/* Tooltip on hover */}
-                   <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-background text-[10px] py-1 px-2 rounded whitespace-nowrap z-50 pointer-events-none font-medium">
-                     {day.label}: {day.intensity} completed
-                   </div>
-                </div>
-              )
-            })}
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <section className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/40 pb-6">
+        <SectionHeader
+          eyebrow="Insights Engine"
+          title="Consistency Overview"
+          subtitle="Deep-dive into your habit patterns and performance trends."
+        />
+        <div className="flex gap-2 shrink-0">
+          {/* Date range filter */}
+          <div className="flex items-center gap-1 bg-secondary rounded-xl p-1">
+            {DATE_RANGE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setDateRange(opt.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  dateRange === opt.value
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
+          <Button size="sm" variant="outline" className="text-xs h-9 gap-1.5">
+            <Download className="w-3.5 h-3.5" />
+            Export
+          </Button>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {/* Habit Completion List */}
-        <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
-           <h3 className="font-bold tracking-tight mb-6">Habit Completion (30d)</h3>
-           <div className="space-y-6">
-             {habitCompletionStats.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">No habit data available.</p>
-             ) : (
-               habitCompletionStats.map(stat => (
-                 <div key={stat.id}>
-                   <div className="flex justify-between text-sm font-semibold mb-2">
-                     <span>{stat.name}</span>
-                     <span className="text-primary">{stat.percentage}%</span>
-                   </div>
-                   <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                     <div 
-                       className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out" 
-                       style={{ width: `${stat.percentage}%` }}
-                     ></div>
-                   </div>
-                 </div>
-               ))
-             )}
-           </div>
+      {/* ── KPI Cards ──────────────────────────────────────────────────── */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Completed"
+          value={kpis.totalCompleted.toLocaleString()}
+          subtitle="Cumulative actions taken"
+          icon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+          decorativeIcon={<CheckCircle2 className="w-28 h-28" />}
+        />
+        <StatCard
+          label="Completion Rate"
+          value={`${kpis.overallRate}%`}
+          subtitle={`Last ${dateRange} days`}
+          accentValue={kpis.overallRate >= 70}
+          icon={<BarChart2 className="w-3.5 h-3.5 text-primary" />}
+          decorativeIcon={<BarChart2 className="w-28 h-28" />}
+          trend={
+            kpis.overallRate >= 70 ? { direction: 'up', label: 'Great consistency' }
+            : kpis.overallRate >= 40 ? { direction: 'neutral', label: 'Keep building' }
+            : { direction: 'down', label: 'Needs focus' }
+          }
+        />
+        <StatCard
+          label="Current Streak"
+          value={`${kpis.maxCurrentStreak}d`}
+          subtitle="Active momentum"
+          icon={<Flame className="w-3.5 h-3.5 text-orange-400" />}
+          decorativeIcon={<Flame className="w-28 h-28" />}
+          trend={
+            kpis.maxCurrentStreak >= 7 ? { direction: 'up', label: 'Week+ streak!' }
+            : kpis.maxCurrentStreak > 0 ? { direction: 'neutral', label: 'Keep it up' }
+            : undefined
+          }
+        />
+        <StatCard
+          label="Longest Streak"
+          value={`${kpis.maxLongestStreak}d`}
+          subtitle="Historical best"
+          icon={<Trophy className="w-3.5 h-3.5 text-yellow-400" />}
+          decorativeIcon={<Trophy className="w-28 h-28" />}
+        />
+      </section>
+
+      {/* ── Contribution Heatmap ────────────────────────────────────────── */}
+      <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
+        <SectionHeader
+          eyebrow="Activity Map"
+          title="Habit Streak Calendar"
+          subtitle="Your year-at-a-glance consistency heatmap."
+          className="mb-6"
+        />
+        {hasData ? (
+          <ActivityHeatmap compact={false} />
+        ) : (
+          <div className="flex items-center justify-center h-24 text-sm text-muted-foreground italic">
+            Add habits and start tracking to see your activity.
+          </div>
+        )}
+      </section>
+
+      {/* ── Completion Trend + Missed Days ──────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Line chart: completion trend */}
+        <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm flex flex-col">
+          <SectionHeader
+            eyebrow="Trend"
+            title="Completion Rate Over Time"
+            subtitle={`Daily % for last ${Math.min(dateRange, 30)} days`}
+            className="mb-5"
+          />
+          <WeeklyProgressChart data={weeklyProgress} target={80} height={200} />
         </section>
 
-        {/* Missed Days Overview */}
-        <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm flex flex-col h-full">
-           <div>
-             <h3 className="font-bold tracking-tight">Missed Days Overview</h3>
-             <p className="text-sm text-muted-foreground mt-1 mb-8">Identifying patterns to optimize your schedule.</p>
-           </div>
-           
-           <div className="h-[200px] w-full mb-6">
-             <ResponsiveContainer width="100%" height="100%">
-               <BarChart data={missedDaysData}>
-                  <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tickMargin={10} />
-                  <Tooltip 
-                    cursor={{fill: 'var(--secondary)', opacity: 0.1}}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)', fontSize: '12px' }}
-                    formatter={(value: number) => [`${value} Misses`, 'Frequency']}
-                  />
-                  <Bar dataKey="misses" fill="hsl(var(--destructive) / 0.7)" radius={[4, 4, 4, 4]} barSize={20} />
-               </BarChart>
-             </ResponsiveContainer>
-           </div>
-
-           <div className="mt-auto bg-secondary/40 border border-border/40 rounded-xl p-4 flex gap-3">
-             <div className="mt-0.5"><Info className="w-5 h-5 text-muted-foreground" /></div>
-             <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-               <strong className="text-foreground">Pro Tip: </strong> 
-               {maxMissedDay.misses > 0 
-                  ? `Your completion rate drops significantly on ${maxMissedDay.name}days. Consider setting "Low-Intensity" targets for this day to maintain momentum without burnout.`
-                  : `Your schedule is perfectly balanced. Maintain your current protocol to maximize long-term consistency.`
-               }
-             </p>
-           </div>
+        {/* Bar chart: missed days by DOW */}
+        <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm flex flex-col">
+          <SectionHeader
+            eyebrow="Weaknesses"
+            title="Misses by Day of Week"
+            subtitle={`Last ${dateRange} days — find your weak spots.`}
+            className="mb-5"
+          />
+          <div className="h-[200px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={missedDaysData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} tick={{ fill: 'hsl(240 5% 65%)' }} />
+                <YAxis fontSize={10} tickLine={false} axisLine={false} tickMargin={4} tick={{ fill: 'hsl(240 5% 65%)' }} />
+                <Tooltip content={<BarTooltip />} cursor={{ fill: 'hsl(240 5% 16%)', opacity: 0.4 }} />
+                <Bar dataKey="misses" radius={[6, 6, 2, 2]} barSize={28}>
+                  {missedDaysData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry === worstDay ? 'hsl(var(--destructive))' : 'hsl(var(--destructive) / 0.4)'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Insight tip */}
+          <div className="mt-auto pt-4">
+            <div className="bg-secondary/40 border border-border/40 rounded-xl p-3.5 flex gap-3">
+              <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">Insight: </strong>
+                {worstDay?.misses > 0
+                  ? `You miss the most on ${worstDay.name}s. Consider lighter habits that day.`
+                  : 'Your schedule looks balanced — great consistency across the week!'}
+              </p>
+            </div>
+          </div>
         </section>
       </div>
+
+      {/* ── Per-Habit Breakdown + Pie ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Donut chart: completion share by habit */}
+        <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
+          <SectionHeader
+            eyebrow="Breakdown"
+            title="Completion by Habit"
+            subtitle={`Share of total completions — last ${dateRange} days.`}
+            className="mb-5"
+          />
+          {pieData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={90}
+                  paddingAngle={3}
+                  dataKey="value"
+                  labelLine={false}
+                  label={PieLabel}
+                >
+                  {pieData.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v: number, name: string) => [`${v} completions`, name]}
+                  contentStyle={{ borderRadius: '10px', border: '1px solid hsl(240 5% 20%)', background: 'hsl(240 5% 10%)', fontSize: '12px' }}
+                />
+                <Legend
+                  iconType="circle"
+                  iconSize={8}
+                  formatter={(value) => <span style={{ fontSize: 11, color: 'hsl(240 5% 65%)' }}>{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[220px] text-sm text-muted-foreground italic">
+              No completions logged in this period.
+            </div>
+          )}
+        </section>
+
+        {/* Horizontal progress bars: per-habit completion rate */}
+        <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
+          <SectionHeader
+            eyebrow="Performance"
+            title="Per-Habit Rates"
+            subtitle={`Completion % over last ${dateRange} days.`}
+            className="mb-5"
+          />
+          <div className="space-y-4">
+            {leaderboard.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No habit data available.</p>
+            ) : (
+              leaderboard.map(stat => (
+                <div key={stat.id}>
+                  <div className="flex justify-between text-sm font-semibold mb-1.5">
+                    <span className="truncate max-w-[160px]">{stat.name}</span>
+                    <span className={
+                      stat.percentage >= 70 ? 'text-emerald-400'
+                      : stat.percentage >= 40 ? 'text-amber-400'
+                      : 'text-destructive'
+                    }>
+                      {stat.percentage}%
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700 ease-out"
+                      style={{
+                        width: `${stat.percentage}%`,
+                        background: stat.percentage >= 70
+                          ? 'hsl(142 70% 45%)'
+                          : stat.percentage >= 40
+                          ? 'hsl(38 92% 50%)'
+                          : 'hsl(var(--destructive))',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* ── Habit Leaderboard ────────────────────────────────────────────── */}
+      <section className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
+        <SectionHeader
+          eyebrow="Rankings"
+          title="Habit Leaderboard"
+          subtitle={`All habits ranked by completion rate over the last ${dateRange} days.`}
+          actions={
+            <Badge variant="secondary">
+              {leaderboard.length} {leaderboard.length === 1 ? 'habit' : 'habits'}
+            </Badge>
+          }
+          className="mb-5"
+        />
+        <HabitLeaderboard data={leaderboard} />
+      </section>
 
     </div>
   );
