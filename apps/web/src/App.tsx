@@ -4,6 +4,8 @@ import { useAuthStore } from './stores/authStore';
 import { Dashboard } from './pages/Dashboard';
 import { Landing } from './pages/Landing';
 import { Analytics } from './pages/Analytics';
+import { AddHabit } from './pages/AddHabit';
+import { AppLayout } from './layouts/AppLayout';
 
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
@@ -17,7 +19,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!mounted) return null;
 
   if (!isAuthenticated) return <Navigate to="/landing" replace />;
-  return <>{children}</>;
+  return <AppLayout>{children}</AppLayout>;
 };
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
@@ -36,8 +38,9 @@ export default function App() {
         <Route path="/auth/signup" element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path="/auth/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         
-        {/* Dashboard Endpoints */}
+        {/* Dashboard Endpoints (Wrapped in AppLayout via ProtectedRoute) */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/add-habit" element={<ProtectedRoute><AddHabit /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
 
         {/* Fallback */}
