@@ -1,18 +1,12 @@
 import React, { useMemo } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import { useHabitStore } from '../stores/habitStore';
-import { Button } from '@waqtify/ui';
-import { Layout } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { formatISO, subDays } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Activity, Target } from 'lucide-react';
 
 export function Analytics() {
-  const { user, logout } = useAuthStore();
   const { habits, logs } = useHabitStore();
-  const navigate = useNavigate();
 
-  // Generate last 7 days of performance
   const chartData = useMemo(() => {
     const data = [];
     const today = new Date();
@@ -44,65 +38,43 @@ export function Analytics() {
   }, [habits, logs]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2 mr-4">
-              <Layout className="w-5 h-5 text-primary" />
-              <span className="text-xl font-bold tracking-tight">Waqtify</span>
-            </div>
-            <nav className="flex items-center space-x-4 text-sm font-medium">
-              <span 
-                className="text-muted-foreground transition-colors hover:text-foreground cursor-pointer py-5" 
-                onClick={() => navigate('/')}
-              >
-                Habits
-              </span>
-              <span className="text-foreground border-b-2 border-primary py-5 cursor-pointer">
-                Analytics
-              </span>
-            </nav>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground hidden sm:inline-block">
-              {user?.name || 'Guest'}
-            </span>
-            <Button variant="ghost" size="sm" onClick={logout}>Sign Out</Button>
-          </div>
-        </div>
-      </header>
+    <div className="w-full flex flex-col gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <section>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">Performance Analytics</h1>
+        <p className="text-muted-foreground">Visualize your consistency and track your system's efficiency.</p>
+      </section>
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 space-y-8">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Performance Analytics</h2>
-          <p className="text-muted-foreground mt-1">Visualize your consistency.</p>
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-4 text-muted-foreground">
+            <span className="text-sm font-medium uppercase tracking-wider">Active Systems</span>
+            <Target className="w-4 h-4" />
+          </div>
+          <p className="text-4xl font-bold">{habits.length}</p>
+          <p className="text-sm text-muted-foreground mt-2">Habits currently active in your dashboard.</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-            <h3 className="tracking-tight text-sm font-medium text-muted-foreground">Total Habits Tracked</h3>
-            <p className="text-3xl font-bold mt-2">{habits.length}</p>
+        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 md:col-span-2">
+          <div className="flex items-center justify-between mb-6 text-muted-foreground">
+            <span className="text-sm font-medium uppercase tracking-wider">7-Day Completion Volume</span>
+            <Activity className="w-4 h-4" />
           </div>
-          <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 md:col-span-2">
-            <h3 className="tracking-tight text-sm font-medium text-muted-foreground mb-4">Global Completion (7 Days)</h3>
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    cursor={{fill: 'transparent'}}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)' }}
-                  />
-                  <Bar dataKey="completed" fill="currentColor" className="fill-primary" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip 
+                  cursor={{fill: 'var(--secondary)', opacity: 0.2}}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--card)', color: 'var(--card-foreground)' }}
+                  itemStyle={{ color: 'var(--foreground)', fontWeight: 'bold' }}
+                />
+                <Bar dataKey="completed" fill="currentColor" className="fill-primary hover:opacity-80 transition-opacity" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
-
-      </main>
+      </div>
     </div>
   );
 }
