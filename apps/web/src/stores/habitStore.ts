@@ -42,6 +42,7 @@ interface HabitState {
 
   // Mutations
   addHabit: (habit: Habit) => void;
+  updateHabit: (habitId: string, fields: Partial<Pick<Habit, 'name' | 'type' | 'target' | 'expectedDuration' | 'category'>>) => void;
   trackHabit: (habitId: string, date: string, params?: { count?: number; duration?: number }) => void;
   deleteHabit: (habitId: string) => void;
 
@@ -86,6 +87,14 @@ export const useHabitStore = create<HabitState>()(
         set((state) => {
           state.habits.push(habit);
           state.logs[habit.id] = [];
+        });
+      },
+
+      updateHabit: (habitId, fields) => {
+        set((state) => {
+          const idx = state.habits.findIndex(h => h.id === habitId);
+          if (idx === -1) return;
+          state.habits[idx] = { ...state.habits[idx], ...fields };
         });
       },
 
