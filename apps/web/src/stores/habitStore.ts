@@ -10,6 +10,7 @@ interface HabitState {
   addHabit: (habit: Habit) => void;
   trackHabit: (habitId: string, date: string, params?: { count?: number; duration?: number }) => void;
   calculateStreak: (habitId: string) => number;
+  calculateLongestStreak: (habitId: string) => number;
 }
 
 const getLocalDateString = (dateObj: Date) => {
@@ -81,23 +82,64 @@ export const useHabitStore = create<HabitState>()(
         const logs = get().logs[habitId];
         if (!logs || logs.length === 0) return 0;
 
-        const todayDate = getLocalDateString(new Date());
-        let currentStreak = 0;
-        
-        // Very basic simple contiguous streak logic for demonstration
-        const sortedLogs = [...logs]
-          .filter(l => l.completed)
-          .sort((a, b) => b.date.localeCompare(a.date)); // descending dates
-        
-        if (sortedLogs.length === 0) return 0;
+        const completedDates = new Set(logs.filter(l => l.completed).map(l => l.date));
+        if (completedDates.size === 0) return 0;
 
-        let checkDate = new Date();
-        const latest = sortedLogs[0].date;
-        const todayStr = todayDate;
+        let streak = 0;
+        const today = new Date();
+        const todayStr = getLocalDateString(today);
         
-        // If not completed today or yesterday, streak is broken
-        // Needs proper date-fns logic in production
-        return sortedLogs.length; 
+        let checkDate = new Date();
+        let checkDateStr = getLocalDateString(checkDate);
+
+        // If today is not completed, we check if yesterday was. If neither are, streak is broken (0).
+        if (!completedDates.has(todayStr)) {
+            checkDate = new Date(today.getTime() - 24 * 60 * 60 * 1000); // Yesterday
+            checkDateStr = getLocalDateString(checkDate);
+            if (!completedDates.has(checkDateStr)) return 0;
+        }
+
+        while (completedDates.has(checkDateStr)) {
+            streak++;
+            checkDate = new Date(checkDate.getTime() - 24 * 60 * 60 * 1000);
+            checkDateStr = getLocalDateString(checkDate);
+            
+            // Failsafe in case of extremely long loops
+            if (streak > 5000) break;
+        }
+
+        return streak;
+      },
+
+      calculateLongestStreak: (habitId) => {
+        const logs = get().logs[habitId];
+        if (!logs || logs.length === 0) return 0;
+
+        // Sort descending
+        const sortedDates = logs
+          .filter(l => l.completed)
+          .map(l => l.date)
+          .sort((a, b) => b.localeCompare(a));
+          
+        if (sortedDates.length === 0) return 0;
+
+        let maxStreak = 1;
+        let currentStreak = 1;
+
+        for (let i = 0; i < sortedDates.length - 1; i++) {
+           const d1 = new Date(sortedDates[i]);
+           const d2 = new Date(sortedDates[i+1]);
+           const diffInDays = Math.round((d1.getTime() - d2.getTime()) / (1000 * 3600 * 24));
+           
+           if (diffInDays === 1) {
+             currentStreak++;
+             if (currentStreak > maxStreak) maxStreak = currentStreak;
+           } else if (diffInDays > 1) {
+             currentStreak = 1;
+           }
+        }
+
+        return maxStreak;
       }
     })),
     {
