@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Landing } from './pages/Landing';
 import { Analytics } from './pages/Analytics';
 import { AddHabit } from './pages/AddHabit';
+import { EditHabit } from './pages/EditHabit';
 import { AppLayout } from './layouts/AppLayout';
 
 import { Login } from './pages/auth/Login';
@@ -41,6 +42,7 @@ export default function App() {
         {/* Dashboard Endpoints (Wrapped in AppLayout via ProtectedRoute) */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/add-habit" element={<ProtectedRoute><AddHabit /></ProtectedRoute>} />
+        <Route path="/edit-habit/:id" element={<ProtectedRoute><EditHabit /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
 
         {/* Fallback */}

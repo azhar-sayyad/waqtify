@@ -1,16 +1,20 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useHabitStore } from '../stores/habitStore';
-import { HabitCard, Button, StatCard, SectionHeader } from '@waqtify/ui';
-import { Plus, Target, Flame, LayoutList, TrendingUp, BarChart2, ChevronRight } from 'lucide-react';
+import { HabitCard, Button, StatCard, SectionHeader, Dialog } from '@waqtify/ui';
+import { Plus, Target, Flame, LayoutList, TrendingUp, ChevronRight, AlertTriangle } from 'lucide-react';
 import { formatISO, startOfDay, format, subDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
+import type { Habit } from '@waqtify/types';
 
 export function Dashboard() {
   const { user } = useAuthStore();
-  const { habits, logs, trackHabit, calculateStreak, getTodayStats, getWeeklyStats } = useHabitStore();
+  const { habits, logs, trackHabit, deleteHabit, calculateStreak, getTodayStats, getWeeklyStats } = useHabitStore();
   const navigate = useNavigate();
+
+  // ── Delete-confirmation dialog state ──────────────────────────────────────
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
 
   const todayStr = formatISO(startOfDay(new Date()), { representation: 'date' });
 
@@ -35,6 +39,13 @@ export function Dashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = user?.name?.split(' ')[0] || 'there';
   const dateLabel = format(new Date(), 'EEEE, MMMM d');
+
+  const handleConfirmDelete = () => {
+    if (habitToDelete) {
+      deleteHabit(habitToDelete.id);
+      setHabitToDelete(null);
+    }
+  };
 
   return (
     <div className="w-full flex flex-col gap-8 animate-in fade-in duration-500 pb-6">
@@ -159,6 +170,8 @@ export function Dashboard() {
                     onTrack={(count, duration) =>
                       trackHabit(habit.id, todayStr, { count, duration })
                     }
+                    onEdit={() => navigate(`/edit-habit/${habit.id}`)}
+                    onDelete={() => setHabitToDelete(habit)}
                   />
                 </div>
               );
@@ -188,6 +201,41 @@ export function Dashboard() {
           <ActivityHeatmap compact />
         </section>
       )}
+
+      {/* ── Delete Confirmation Dialog ────────────────────────────────── */}
+      <Dialog
+        isOpen={!!habitToDelete}
+        onClose={() => setHabitToDelete(null)}
+        title={
+          <span className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="w-4 h-4" />
+            Delete Habit
+          </span>
+        }
+      >
+        <div className="flex flex-col gap-5">
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Are you sure you want to delete{' '}
+            <span className="font-semibold text-foreground">{habitToDelete?.name}</span>?{' '}
+            All tracking history for this habit will be permanently removed and cannot be undone.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setHabitToDelete(null)}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Delete Habit
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
     </div>
   );
