@@ -291,23 +291,31 @@ export function Analytics() {
                 <p className="text-sm text-muted-foreground">Find your weak spots</p>
               </div>
             </div>
-            <div className="flex-1 min-h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={missedDaysData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-                  <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} tick={{ fill: 'hsl(240 5% 65%)' }} />
-                  <YAxis fontSize={10} tickLine={false} axisLine={false} tickMargin={4} tick={{ fill: 'hsl(240 5% 65%)' }} />
-                  <Tooltip content={<BarTooltip />} cursor={{ fill: 'hsl(240 5% 16%)', opacity: 0.4 }} />
-                  <Bar dataKey="misses" radius={[6, 6, 2, 2]} barSize={28}>
-                    {missedDaysData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry === worstDay ? 'hsl(var(--destructive))' : 'hsl(var(--destructive) / 0.4)'}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {(!habits || habits.length === 0) ? (
+              <div className="flex flex-col items-center justify-center h-[240px] text-muted-foreground">
+                <Activity className="w-12 h-12 mb-3 opacity-30" />
+                <p className="text-sm font-medium">No habits tracked yet</p>
+                <p className="text-xs mt-1">Start tracking habits to see your weak spots</p>
+              </div>
+            ) : (
+              <div className="h-[240px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={missedDaysData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                    <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} tick={{ fill: 'hsl(240 5% 65%)' }} />
+                    <YAxis fontSize={10} tickLine={false} axisLine={false} tickMargin={4} tick={{ fill: 'hsl(240 5% 65%)' }} />
+                    <Tooltip content={<BarTooltip />} cursor={{ fill: 'hsl(240 5% 16%)', opacity: 0.4 }} />
+                    <Bar dataKey="misses" radius={[6, 6, 2, 2]} barSize={28}>
+                      {missedDaysData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.misses > 0 && entry === worstDay ? 'hsl(var(--destructive))' : 'hsl(var(--destructive) / 0.4)'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
             {/* Enhanced Insight tip */}
             <div className="mt-4">
               <div className="bg-gradient-to-br from-secondary/50 to-secondary/30 border border-border/40 rounded-xl p-4 flex gap-3">

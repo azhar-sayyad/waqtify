@@ -280,12 +280,23 @@ export const useHabitStore = create<HabitState>()(
         const todayStr = getLocalDateString(new Date());
         const cutoff = getLocalDateString(subDays(new Date(), days));
 
+        // Generate all dates in the range
+        const allDates: string[] = [];
+        let currentDate = subDays(new Date(), days - 1);
+        for (let i = 0; i < days; i++) {
+          allDates.push(getLocalDateString(currentDate));
+          currentDate = new Date(currentDate.getTime() + 86400000);
+        }
+
         habits.forEach(h => {
-          (logs[h.id] || [])
-            .filter(l => l.date >= cutoff && l.date <= todayStr && !l.completed)
-            .forEach(l => {
-              weekCounts[getDay(new Date(l.date))]++;
-            });
+          const hLogs = logs[h.id] || [];
+          allDates.forEach(dateStr => {
+            const logForDate = hLogs.find(l => l.date === dateStr);
+            // Count as miss if: no log exists OR log exists but not completed
+            if (!logForDate || !logForDate.completed) {
+              weekCounts[getDay(new Date(dateStr))]++;
+            }
+          });
         });
 
         return [
