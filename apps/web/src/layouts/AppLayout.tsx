@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {useAuthStore} from '../stores/authStore';
 import {useNavigate, useLocation} from 'react-router-dom';
-import {LayoutDashboard, BarChart2, Settings, LogOut, Hexagon, Search, Bell, Menu, X} from 'lucide-react';
+import {LayoutDashboard, BarChart2, Settings, Hexagon, Search, Bell, Menu, X} from 'lucide-react';
 import {Button} from '@waqtify/ui';
 
 export function AppLayout({children}: { children: React.ReactNode }) {
@@ -10,7 +10,6 @@ export function AppLayout({children}: { children: React.ReactNode }) {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {

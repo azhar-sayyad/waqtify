@@ -1,16 +1,34 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuthStore } from '../../stores/authStore';
 import { Button, Input, Label } from '@waqtify/ui';
-import { LayoutTemplate, Mail, KeyRound, ArrowLeft } from 'lucide-react';
+import { LayoutTemplate, Mail, KeyRound, ArrowLeft, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function ForgotPassword() {
   const navigate = useNavigate();
+  const resetPassword = useAuthStore((state) => state.resetPassword);
   const [email, setEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    const result = await resetPassword(email, newPassword);
+    if (!result.success) {
+      setError(result.message || 'Unable to reset password');
+      return;
+    }
+
     setSubmitted(true);
   };
 
@@ -47,7 +65,7 @@ export function ForgotPassword() {
           </div>
           <div>
             <h2 className="text-2xl font-bold tracking-tight mb-1">Reset Password</h2>
-            <p className="text-muted-foreground text-sm">We'll send you a recovery link.</p>
+            <p className="text-muted-foreground text-sm">Reset the local demo password for your account.</p>
           </div>
         </div>
 
@@ -58,7 +76,7 @@ export function ForgotPassword() {
              </div>
              <h3 className="font-bold text-lg mb-2">Check your inbox</h3>
              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                We've sent a confidential recovery link to <span className="text-foreground font-semibold">{email}</span>. It will expire in 15 minutes.
+                Your password for <span className="text-foreground font-semibold">{email}</span> has been updated. You can log in with the new password now.
              </p>
              <Button variant="outline" className="w-full h-12 rounded-xl" onClick={() => navigate('/auth/login')}>
                 Return to Log In
@@ -66,6 +84,11 @@ export function ForgotPassword() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg text-center font-medium">
+                {error}
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground px-1">Email Address</Label>
               <div className="relative">
@@ -81,8 +104,38 @@ export function ForgotPassword() {
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground px-1">New Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  required
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10 h-12 bg-secondary/30 border-transparent focus:border-primary transition-colors text-sm rounded-xl"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground px-1">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  required
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10 h-12 bg-secondary/30 border-transparent focus:border-primary transition-colors text-sm rounded-xl"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
             <Button type="submit" className="w-full h-12 rounded-xl mt-4 font-semibold">
-              Send Protection Link
+              Update Password
             </Button>
           </form>
         )}

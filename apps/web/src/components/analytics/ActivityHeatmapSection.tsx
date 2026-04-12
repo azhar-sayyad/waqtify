@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Activity } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { ActivityHeatmap } from '../../components/ActivityHeatmap';
 
 export function ActivityHeatmapSection() {

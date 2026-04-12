@@ -1,5 +1,7 @@
 import React from 'react';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
+import type { TooltipProps } from 'recharts';
 import { PieChart as PieChartIcon } from 'lucide-react';
 
 interface PieData {
@@ -35,6 +37,11 @@ function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) 
 }
 
 export function CompletionByHabitPieChart({ data }: CompletionByHabitPieChartProps) {
+  const formatTooltipValue: TooltipProps<ValueType, NameType>['formatter'] = (value, name) => [
+    `${Number(value ?? 0)} completions`,
+    String(name ?? 'Habit'),
+  ];
+
   return (
     <section className="relative overflow-hidden rounded-2xl bg-card border border-border/50 shadow-lg">
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
@@ -70,7 +77,7 @@ export function CompletionByHabitPieChart({ data }: CompletionByHabitPieChartPro
                 ))}
               </Pie>
               <Tooltip
-                formatter={(v: number, name: string) => [`${v} completions`, name]}
+                formatter={formatTooltipValue}
                 contentStyle={{ borderRadius: '10px', border: '1px solid hsl(240 5% 20%)', background: 'hsl(240 5% 10%)', fontSize: '12px' }}
               />
               <Legend

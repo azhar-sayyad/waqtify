@@ -4,58 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Input, Label } from '@waqtify/ui';
 import { ArrowLeft, CheckCircle2, Clock, Hash, Calendar, Tag, FileText, Bell, Palette, Star } from 'lucide-react';
 import type { HabitType, HabitPriority, HabitCategory } from '@waqtify/types';
-
-const categoryLabels: Record<HabitCategory, string> = {
-  health_fitness: 'Health & Fitness',
-  productivity: 'Productivity',
-  learning: 'Learning',
-  mindfulness: 'Mindfulness',
-  social: 'Social',
-  finance: 'Finance',
-  career: 'Career',
-  creativity: 'Creativity',
-  relationships: 'Relationships',
-  personal_development: 'Personal Development',
-  other: 'Other'
-};
-
-const priorityColors: Record<HabitPriority, string> = {
-  low: 'bg-green-500',
-  medium: 'bg-yellow-500',
-  high: 'bg-red-500'
-};
-
-const iconOptions = [
-  { value: '💪', label: 'Muscle' },
-  { value: '📚', label: 'Book' },
-  { value: '🧘', label: 'Meditation' },
-  { value: '💧', label: 'Water' },
-  { value: '🏃', label: 'Running' },
-  { value: '✍️', label: 'Writing' },
-  { value: '🎨', label: 'Art' },
-  { value: '💰', label: 'Money' },
-  { value: '🎯', label: 'Target' },
-  { value: '⭐', label: 'Star' },
-  { value: '🌱', label: 'Plant' },
-  { value: '🎵', label: 'Music' },
-];
-
-const colorOptions = [
-  '#3B82F6', // Blue
-  '#10B981', // Green
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#8B5CF6', // Purple
-  '#EC4899', // Pink
-  '#06B6D4', // Cyan
-  '#84CC16', // Lime
-  '#F97316', // Orange
-  '#6366F1', // Indigo
-];
+import {
+  categoryLabels,
+  colorOptions,
+  createDefaultHabitFormValues,
+  habitFormValuesToInput,
+  iconOptions,
+  priorityColors,
+} from '../domain/habits/form';
 
 export function AddHabit() {
-  const addHabit = useHabitStore(state => state.addHabit);
+  const createHabit = useHabitStore(state => state.createHabit);
   const navigate = useNavigate();
+  const defaults = createDefaultHabitFormValues();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -67,7 +28,7 @@ export function AddHabit() {
   const [target, setTarget] = useState<number>(1);
   const [targetTime, setTargetTime] = useState<number>(10);
   const [reminderTime, setReminderTime] = useState<string>('');
-  const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState<string>(defaults.startDate);
   const [endDate, setEndDate] = useState<string>('');
   const [tagsInput, setTagsInput] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -76,26 +37,24 @@ export function AddHabit() {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
-
-    addHabit({
-      id: Math.random().toString(36).substring(2, 9),
-      name: name.trim(),
-      description: description.trim() || undefined,
-      category,
-      type,
-      priority,
-      color,
-      icon,
-      target: type === 'count' ? target : undefined,
-      expectedDuration: type === 'timer' ? targetTime * 60 : undefined,
-      reminderTime: reminderTime || undefined,
-      startDate,
-      endDate: endDate || undefined,
-      tags: tags.length > 0 ? tags : undefined,
-      notes: notes.trim() || undefined,
-      createdAt: new Date().toISOString()
-    });
+    createHabit(
+      habitFormValuesToInput({
+        name,
+        description,
+        type,
+        category,
+        priority,
+        color,
+        icon,
+        target,
+        targetTime,
+        reminderTime,
+        startDate,
+        endDate,
+        tagsInput,
+        notes,
+      })
+    );
 
     navigate('/');
   };

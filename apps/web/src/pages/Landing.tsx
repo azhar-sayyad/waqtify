@@ -9,13 +9,11 @@ import {
 } from 'lucide-react';
 
 export function Landing() {
-  const login = useAuthStore(s => s.login);
+  const loginGuest = useAuthStore(s => s.loginGuest);
   const navigate = useNavigate();
 
   const handleBypass = async () => {
-    // Generate a secure anonymous session
-    const randomGuestId = "guest_" + Math.random().toString(36).substring(2, 9);
-    await login(`${randomGuestId}@anonymous.local`);
+    await loginGuest();
     navigate('/');
   };
 

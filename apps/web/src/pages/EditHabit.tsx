@@ -4,54 +4,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Input, Label } from '@waqtify/ui';
 import { ArrowLeft, CheckCircle2, Clock, Hash, Calendar, Tag, FileText, Bell, Palette, Star } from 'lucide-react';
 import type { HabitType, HabitPriority, HabitCategory } from '@waqtify/types';
-
-const categoryLabels: Record<HabitCategory, string> = {
-  health_fitness: 'Health & Fitness',
-  productivity: 'Productivity',
-  learning: 'Learning',
-  mindfulness: 'Mindfulness',
-  social: 'Social',
-  finance: 'Finance',
-  career: 'Career',
-  creativity: 'Creativity',
-  relationships: 'Relationships',
-  personal_development: 'Personal Development',
-  other: 'Other'
-};
-
-const priorityColors: Record<HabitPriority, string> = {
-  low: 'bg-green-500',
-  medium: 'bg-yellow-500',
-  high: 'bg-red-500'
-};
-
-const iconOptions = [
-  { value: '💪', label: 'Muscle' },
-  { value: '📚', label: 'Book' },
-  { value: '🧘', label: 'Meditation' },
-  { value: '💧', label: 'Water' },
-  { value: '🏃', label: 'Running' },
-  { value: '✍️', label: 'Writing' },
-  { value: '🎨', label: 'Art' },
-  { value: '💰', label: 'Money' },
-  { value: '🎯', label: 'Target' },
-  { value: '⭐', label: 'Star' },
-  { value: '🌱', label: 'Plant' },
-  { value: '🎵', label: 'Music' },
-];
-
-const colorOptions = [
-  '#3B82F6', // Blue
-  '#10B981', // Green
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#8B5CF6', // Purple
-  '#EC4899', // Pink
-  '#06B6D4', // Cyan
-  '#84CC16', // Lime
-  '#F97316', // Orange
-  '#6366F1', // Indigo
-];
+import {
+  categoryLabels,
+  colorOptions,
+  habitFormValuesToInput,
+  habitToFormValues,
+  iconOptions,
+  priorityColors,
+} from '../domain/habits/form';
 
 export function EditHabit() {
   const { id } = useParams<{ id: string }>();
@@ -81,20 +41,21 @@ export function EditHabit() {
   // Populate form with existing habit data
   useEffect(() => {
     if (habit) {
-      setName(habit.name);
-      setDescription(habit.description || '');
-      setType(habit.type);
-      setCategory(habit.category || 'other');
-      setPriority(habit.priority || 'medium');
-      setColor(habit.color || '#3B82F6');
-      setIcon(habit.icon || '⭐');
-      setTarget(habit.target ?? 1);
-      setTargetTime(habit.expectedDuration ? Math.round(habit.expectedDuration / 60) : 10);
-      setReminderTime(habit.reminderTime || '');
-      setStartDate(habit.startDate || new Date().toISOString().split('T')[0]);
-      setEndDate(habit.endDate || '');
-      setTagsInput(habit.tags ? habit.tags.join(', ') : '');
-      setNotes(habit.notes || '');
+      const values = habitToFormValues(habit);
+      setName(values.name);
+      setDescription(values.description);
+      setType(values.type);
+      setCategory(values.category);
+      setPriority(values.priority);
+      setColor(values.color);
+      setIcon(values.icon);
+      setTarget(values.target);
+      setTargetTime(values.targetTime);
+      setReminderTime(values.reminderTime);
+      setStartDate(values.startDate);
+      setEndDate(values.endDate);
+      setTagsInput(values.tagsInput);
+      setNotes(values.notes);
     }
   }, [habit]);
 
@@ -112,24 +73,25 @@ export function EditHabit() {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const tags = tagsInput.split(',').map((t: string) => t.trim()).filter(Boolean);
-
-    updateHabit(id!, {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      category,
-      type,
-      priority,
-      color,
-      icon,
-      target: type === 'count' ? target : undefined,
-      expectedDuration: type === 'timer' ? targetTime * 60 : undefined,
-      reminderTime: reminderTime || undefined,
-      startDate,
-      endDate: endDate || undefined,
-      tags: tags.length > 0 ? tags : undefined,
-      notes: notes.trim() || undefined,
-    });
+    updateHabit(
+      id!,
+      habitFormValuesToInput({
+        name,
+        description,
+        type,
+        category,
+        priority,
+        color,
+        icon,
+        target,
+        targetTime,
+        reminderTime,
+        startDate,
+        endDate,
+        tagsInput,
+        notes,
+      })
+    );
 
     navigate('/');
   };

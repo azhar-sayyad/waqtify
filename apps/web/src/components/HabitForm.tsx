@@ -1,65 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Input, Label, Dialog } from '@waqtify/ui';
-import { CheckCircle2, Clock, Hash, Calendar, Tag, FileText, Bell, Palette, Star, X } from 'lucide-react';
+import { CheckCircle2, Clock, Hash, Calendar, Tag, FileText, Bell, Palette, Star } from 'lucide-react';
 import type { Habit, HabitType, HabitPriority, HabitCategory } from '@waqtify/types';
-
-const categoryLabels: Record<HabitCategory, string> = {
-  health_fitness: 'Health & Fitness',
-  productivity: 'Productivity',
-  learning: 'Learning',
-  mindfulness: 'Mindfulness',
-  social: 'Social',
-  finance: 'Finance',
-  career: 'Career',
-  creativity: 'Creativity',
-  relationships: 'Relationships',
-  personal_development: 'Personal Development',
-  other: 'Other'
-};
-
-const priorityColors: Record<HabitPriority, string> = {
-  low: 'bg-green-500',
-  medium: 'bg-yellow-500',
-  high: 'bg-red-500'
-};
-
-const iconOptions = [
-  { value: '💪', label: 'Muscle' },
-  { value: '📚', label: 'Book' },
-  { value: '🧘', label: 'Meditation' },
-  { value: '💧', label: 'Water' },
-  { value: '🏃', label: 'Running' },
-  { value: '✍️', label: 'Writing' },
-  { value: '🎨', label: 'Art' },
-  { value: '💰', label: 'Money' },
-  { value: '🎯', label: 'Target' },
-  { value: '⭐', label: 'Star' },
-  { value: '🌱', label: 'Plant' },
-  { value: '🎵', label: 'Music' },
-];
-
-const colorOptions = [
-  '#3B82F6', // Blue
-  '#10B981', // Green
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#8B5CF6', // Purple
-  '#EC4899', // Pink
-  '#06B6D4', // Cyan
-  '#84CC16', // Lime
-  '#F97316', // Orange
-  '#6366F1', // Indigo
-];
+import type { HabitUpsertInput } from '../domain/habits/types';
+import {
+  categoryLabels,
+  colorOptions,
+  createDefaultHabitFormValues,
+  habitFormValuesToInput,
+  habitToFormValues,
+  iconOptions,
+  priorityColors,
+} from '../domain/habits/form';
 
 export interface HabitFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (habitData: Partial<Habit>) => void;
+  onSubmit: (habitData: HabitUpsertInput) => void;
   initialData?: Habit;
   isEditing?: boolean;
 }
 
 export function HabitForm({ isOpen, onClose, onSubmit, initialData, isEditing = false }: HabitFormProps) {
+  const defaults = createDefaultHabitFormValues();
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -71,7 +34,7 @@ export function HabitForm({ isOpen, onClose, onSubmit, initialData, isEditing = 
   const [target, setTarget] = useState<number>(1);
   const [targetTime, setTargetTime] = useState<number>(10);
   const [reminderTime, setReminderTime] = useState<string>('');
-  const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState<string>(defaults.startDate);
   const [endDate, setEndDate] = useState<string>('');
   const [tagsInput, setTagsInput] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -79,20 +42,21 @@ export function HabitForm({ isOpen, onClose, onSubmit, initialData, isEditing = 
   // Populate form when editing
   useEffect(() => {
     if (initialData && isEditing) {
-      setName(initialData.name);
-      setDescription(initialData.description || '');
-      setType(initialData.type);
-      setCategory(initialData.category || 'other');
-      setPriority(initialData.priority || 'medium');
-      setColor(initialData.color || '#3B82F6');
-      setIcon(initialData.icon || '⭐');
-      setTarget(initialData.target ?? 1);
-      setTargetTime(initialData.expectedDuration ? Math.round(initialData.expectedDuration / 60) : 10);
-      setReminderTime(initialData.reminderTime || '');
-      setStartDate(initialData.startDate || new Date().toISOString().split('T')[0]);
-      setEndDate(initialData.endDate || '');
-      setTagsInput(initialData.tags ? initialData.tags.join(', ') : '');
-      setNotes(initialData.notes || '');
+      const values = habitToFormValues(initialData);
+      setName(values.name);
+      setDescription(values.description);
+      setType(values.type);
+      setCategory(values.category);
+      setPriority(values.priority);
+      setColor(values.color);
+      setIcon(values.icon);
+      setTarget(values.target);
+      setTargetTime(values.targetTime);
+      setReminderTime(values.reminderTime);
+      setStartDate(values.startDate);
+      setEndDate(values.endDate);
+      setTagsInput(values.tagsInput);
+      setNotes(values.notes);
     } else if (!isEditing) {
       // Reset form for new habit
       resetForm();
@@ -100,46 +64,45 @@ export function HabitForm({ isOpen, onClose, onSubmit, initialData, isEditing = 
   }, [initialData, isEditing, isOpen]);
 
   const resetForm = () => {
-    setName('');
-    setDescription('');
-    setType('binary');
-    setCategory('other');
-    setPriority('medium');
-    setColor('#3B82F6');
-    setIcon('⭐');
-    setTarget(1);
-    setTargetTime(10);
-    setReminderTime('');
-    setStartDate(new Date().toISOString().split('T')[0]);
-    setEndDate('');
-    setTagsInput('');
-    setNotes('');
+    const values = createDefaultHabitFormValues();
+    setName(values.name);
+    setDescription(values.description);
+    setType(values.type);
+    setCategory(values.category);
+    setPriority(values.priority);
+    setColor(values.color);
+    setIcon(values.icon);
+    setTarget(values.target);
+    setTargetTime(values.targetTime);
+    setReminderTime(values.reminderTime);
+    setStartDate(values.startDate);
+    setEndDate(values.endDate);
+    setTagsInput(values.tagsInput);
+    setNotes(values.notes);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const tags = tagsInput.split(',').map((t: string) => t.trim()).filter(Boolean);
-
-    const habitData: Partial<Habit> = {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      category,
-      type,
-      priority,
-      color,
-      icon,
-      target: type === 'count' ? target : undefined,
-      expectedDuration: type === 'timer' ? targetTime * 60 : undefined,
-      reminderTime: reminderTime || undefined,
-      startDate,
-      endDate: endDate || undefined,
-      tags: tags.length > 0 ? tags : undefined,
-      notes: notes.trim() || undefined,
-    };
-
-    onSubmit(habitData);
+    onSubmit(
+      habitFormValuesToInput({
+        name,
+        description,
+        type,
+        category,
+        priority,
+        color,
+        icon,
+        target,
+        targetTime,
+        reminderTime,
+        startDate,
+        endDate,
+        tagsInput,
+        notes,
+      })
+    );
     resetForm();
     onClose();
   };

@@ -3,7 +3,6 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import { Activity, Info } from 'lucide-react';
-import type { MissedDayData } from '../../stores/habitStore';
 
 interface MissedDay {
   name: string;
@@ -27,6 +26,8 @@ function BarTooltip({ active, payload, label }: any) {
 }
 
 export function MissedDaysChart({ data, worstDay, hasHabits }: MissedDaysChartProps) {
+  const weakestDay = worstDay || { name: 'No day', misses: 0 };
+
   return (
     <section className="relative overflow-hidden rounded-2xl bg-card border border-border/50 shadow-lg">
       <div className="absolute top-0 right-0 w-64 h-64 bg-destructive/5 rounded-full blur-3xl"></div>
@@ -76,8 +77,8 @@ export function MissedDaysChart({ data, worstDay, hasHabits }: MissedDaysChartPr
             <div>
               <p className="text-xs font-semibold text-primary mb-1">AI Insight</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {worstDay?.misses > 0
-                  ? `You miss the most on ${worstDay.name}s. Consider setting lighter habits or reminders for that day.`
+                {weakestDay.misses > 0
+                  ? `You miss the most on ${weakestDay.name}s. Consider setting lighter habits or reminders for that day.`
                   : 'Your schedule looks balanced — great consistency across the entire week!'}
               </p>
             </div>

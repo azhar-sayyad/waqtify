@@ -1,18 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useHabitStore } from '../stores/habitStore';
-import { HabitCard, Button, StatCard, SectionHeader, Dialog } from '@waqtify/ui';
-import { Plus, Target, Flame, LayoutList, TrendingUp, ChevronRight, AlertTriangle, Calendar, Zap, Award, Activity } from 'lucide-react';
-import { formatISO, startOfDay, format, subDays } from 'date-fns';
+import { HabitCard, Button, StatCard, Dialog } from '@waqtify/ui';
+import { Plus, Target, Flame, LayoutList, TrendingUp, ChevronRight, AlertTriangle, Calendar, Zap, Activity } from 'lucide-react';
+import { formatISO, startOfDay, format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
 import { HabitForm } from '../components/HabitForm';
-import { WeeklyStatsSection } from '../components/analytics/WeeklyStatsSection';
 import type { Habit } from '@waqtify/types';
 
 export function Dashboard() {
   const { user } = useAuthStore();
-  const { habits, logs, trackHabit, deleteHabit, addHabit, updateHabit, calculateStreak, getTodayStats, getWeeklyStats } = useHabitStore();
+  const {
+    habits,
+    logs,
+    trackHabit,
+    deleteHabit,
+    createHabit,
+    updateHabit,
+    calculateStreak,
+    getTodayStats,
+    getWeeklyStats,
+  } = useHabitStore();
   const navigate = useNavigate();
 
   // ── Dialog states ─────────────────────────────────────────────────────────
@@ -273,11 +282,7 @@ export function Dashboard() {
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
         onSubmit={(habitData) => {
-          addHabit({
-            id: Math.random().toString(36).substring(2, 9),
-            createdAt: new Date().toISOString(),
-            ...habitData,
-          } as Habit);
+          createHabit(habitData);
         }}
       />
 
