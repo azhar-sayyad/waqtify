@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import type { Habit, HabitLog } from '@waqtify/types';
+import type { Habit, HabitLog, HabitPriority, HabitCategory } from '@waqtify/types';
 import { Button } from '../atoms/Button';
 import { ProgressRing } from '../atoms/ProgressRing';
 import { Check, Plus, Minus, Play, MoreVertical, Pencil, Trash2 } from 'lucide-react';
@@ -15,6 +15,26 @@ export interface HabitCardProps {
   /** Optional: trigger delete confirmation */
   onDelete?: () => void;
 }
+
+const categoryLabels: Record<HabitCategory, string> = {
+  health_fitness: 'Health & Fitness',
+  productivity: 'Productivity',
+  learning: 'Learning',
+  mindfulness: 'Mindfulness',
+  social: 'Social',
+  finance: 'Finance',
+  career: 'Career',
+  creativity: 'Creativity',
+  relationships: 'Relationships',
+  personal_development: 'Personal Development',
+  other: 'Other'
+};
+
+const priorityColors: Record<HabitPriority, string> = {
+  low: 'bg-green-500',
+  medium: 'bg-yellow-500',
+  high: 'bg-red-500'
+};
 
 export function HabitCard({ habit, todaysLog, onTrack, streakCount, onEdit, onDelete }: HabitCardProps) {
   const isCompleted = todaysLog?.completed || false;
@@ -81,24 +101,70 @@ export function HabitCard({ habit, todaysLog, onTrack, streakCount, onEdit, onDe
 
   const showMenu = !!(onEdit || onDelete);
 
+  // Get custom color or default
+  const accentColor = habit.color || '#3B82F6';
+  const icon = habit.icon || '⭐';
+
   return (
     <div className={cn(
       "relative flex items-center justify-between p-4 rounded-xl border bg-card transition-all shadow-sm hover:shadow-md",
       isCompleted && "border-green-200 bg-green-50/50"
-    )}>
+    )} style={isCompleted ? {} : { borderLeft: `4px solid ${accentColor}` }}>
       <div className="flex items-center space-x-4">
-        <ProgressRing
-          progress={progress}
-          radius={28}
-          strokeWidth={4}
-          colorClass={isCompleted ? "text-green-500" : "text-primary"}
-        />
+        {/* Custom colored progress ring */}
+        <div className="relative">
+          <ProgressRing
+            progress={progress}
+            radius={28}
+            strokeWidth={4}
+            colorClass={isCompleted ? "text-green-500" : "text-primary"}
+          />
+          {/* Priority indicator dot */}
+          {habit.priority && (
+            <div className={cn(
+              "absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-background",
+              priorityColors[habit.priority]
+            )} />
+          )}
+        </div>
+
         <div>
-          <h3 className="font-semibold text-lg">{habit.name}</h3>
-          <p className="text-sm text-muted-foreground">
-            {streakCount > 0 ? `${streakCount} day streak 🔥` : 'Built today'}
-            {habit.category && ` • ${habit.category}`}
-          </p>
+          <div className="flex items-center gap-2">
+            {habit.icon && <span className="text-xl">{icon}</span>}
+            <h3 className="font-semibold text-lg">{habit.name}</h3>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+            <span>
+              {streakCount > 0 ? `${streakCount} day streak 🔥` : 'Built today'}
+            </span>
+            {habit.category && (
+              <>
+                <span>•</span>
+                <span>{categoryLabels[habit.category]}</span>
+              </>
+            )}
+            {habit.tags && habit.tags.length > 0 && (
+              <div className="flex gap-1 mt-1">
+                {habit.tags.slice(0, 3).map((tag, idx) => (
+                  <span 
+                    key={idx}
+                    className="text-xs px-2 py-0.5 bg-secondary/60 rounded-full"
+                    style={isCompleted ? {} : { backgroundColor: `${accentColor}20` }}
+                  >
+                    #{tag}
+                  </span>
+                ))}
+                {habit.tags.length > 3 && (
+                  <span className="text-xs text-muted-foreground">+{habit.tags.length - 3} more</span>
+                )}
+              </div>
+            )}
+          </div>
+          {habit.description && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+              {habit.description}
+            </p>
+          )}
         </div>
       </div>
 
