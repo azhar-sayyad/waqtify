@@ -6,6 +6,7 @@ import { Landing } from './pages/Landing';
 import { Analytics } from './pages/Analytics';
 import { AddHabit } from './pages/AddHabit';
 import { EditHabit } from './pages/EditHabit';
+import { Settings } from './pages/Settings';
 import { AppLayout } from './layouts/AppLayout';
 
 import { Login } from './pages/auth/Login';
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/add-habit" element={<ProtectedRoute><AddHabit /></ProtectedRoute>} />
         <Route path="/edit-habit/:id" element={<ProtectedRoute><EditHabit /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
