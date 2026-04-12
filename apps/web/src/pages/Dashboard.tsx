@@ -7,6 +7,7 @@ import { formatISO, startOfDay, format, subDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
 import { HabitForm } from '../components/HabitForm';
+import { WeeklyStatsSection } from '../components/analytics/WeeklyStatsSection';
 import type { Habit } from '@waqtify/types';
 
 export function Dashboard() {
@@ -164,6 +165,9 @@ export function Dashboard() {
           }
         />
       </section>
+
+      {/* ── Weekly Stats Section ──────────────────────────────────────── */}
+      {/* <WeeklyStatsSection data={weeklyStats} /> */}
 
       {/* ── Today's Habits with Enhanced Section Header ────────────────── */}
       <section className="flex flex-col gap-5">
