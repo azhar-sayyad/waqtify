@@ -42,7 +42,7 @@ interface HabitState {
 
   // Mutations
   addHabit: (habit: Habit) => void;
-  updateHabit: (habitId: string, fields: Partial<Pick<Habit, 'name' | 'type' | 'target' | 'expectedDuration' | 'category'>>) => void;
+  updateHabit: (habitId: string, fields: Partial<Pick<Habit, 'name' | 'description' | 'category' | 'type' | 'priority' | 'color' | 'icon' | 'target' | 'expectedDuration' | 'reminderTime' | 'startDate' | 'endDate' | 'tags' | 'notes'>>) => void;
   trackHabit: (habitId: string, date: string, params?: { count?: number; duration?: number }) => void;
   deleteHabit: (habitId: string) => void;
 
@@ -280,12 +280,23 @@ export const useHabitStore = create<HabitState>()(
         const todayStr = getLocalDateString(new Date());
         const cutoff = getLocalDateString(subDays(new Date(), days));
 
+        // Generate all dates in the range
+        const allDates: string[] = [];
+        let currentDate = subDays(new Date(), days - 1);
+        for (let i = 0; i < days; i++) {
+          allDates.push(getLocalDateString(currentDate));
+          currentDate = new Date(currentDate.getTime() + 86400000);
+        }
+
         habits.forEach(h => {
-          (logs[h.id] || [])
-            .filter(l => l.date >= cutoff && l.date <= todayStr && !l.completed)
-            .forEach(l => {
-              weekCounts[getDay(new Date(l.date))]++;
-            });
+          const hLogs = logs[h.id] || [];
+          allDates.forEach(dateStr => {
+            const logForDate = hLogs.find(l => l.date === dateStr);
+            // Count as miss if: no log exists OR log exists but not completed
+            if (!logForDate || !logForDate.completed) {
+              weekCounts[getDay(new Date(dateStr))]++;
+            }
+          });
         });
 
         return [

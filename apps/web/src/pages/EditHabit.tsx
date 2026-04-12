@@ -1,9 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useHabitStore } from '../stores/habitStore';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Input, Label } from '@waqtify/ui';
-import { ArrowLeft, CheckCircle2, Clock, Hash } from 'lucide-react';
-import type { HabitType } from '@waqtify/types';
+import { ArrowLeft, CheckCircle2, Clock, Hash, Calendar, Tag, FileText, Bell, Palette, Star } from 'lucide-react';
+import type { HabitType, HabitPriority, HabitCategory } from '@waqtify/types';
+
+const categoryLabels: Record<HabitCategory, string> = {
+  health_fitness: 'Health & Fitness',
+  productivity: 'Productivity',
+  learning: 'Learning',
+  mindfulness: 'Mindfulness',
+  social: 'Social',
+  finance: 'Finance',
+  career: 'Career',
+  creativity: 'Creativity',
+  relationships: 'Relationships',
+  personal_development: 'Personal Development',
+  other: 'Other'
+};
+
+const priorityColors: Record<HabitPriority, string> = {
+  low: 'bg-green-500',
+  medium: 'bg-yellow-500',
+  high: 'bg-red-500'
+};
+
+const iconOptions = [
+  { value: '💪', label: 'Muscle' },
+  { value: '📚', label: 'Book' },
+  { value: '🧘', label: 'Meditation' },
+  { value: '💧', label: 'Water' },
+  { value: '🏃', label: 'Running' },
+  { value: '✍️', label: 'Writing' },
+  { value: '🎨', label: 'Art' },
+  { value: '💰', label: 'Money' },
+  { value: '🎯', label: 'Target' },
+  { value: '⭐', label: 'Star' },
+  { value: '🌱', label: 'Plant' },
+  { value: '🎵', label: 'Music' },
+];
+
+const colorOptions = [
+  '#3B82F6', // Blue
+  '#10B981', // Green
+  '#F59E0B', // Amber
+  '#EF4444', // Red
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+  '#06B6D4', // Cyan
+  '#84CC16', // Lime
+  '#F97316', // Orange
+  '#6366F1', // Indigo
+];
 
 export function EditHabit() {
   const { id } = useParams<{ id: string }>();
@@ -14,13 +62,41 @@ export function EditHabit() {
 
   const habit = habits.find(h => h.id === id);
 
-  // Pre-populate form from existing habit data
-  const [name, setName] = useState(habit?.name ?? '');
-  const [type, setType] = useState<HabitType>(habit?.type ?? 'binary');
-  const [target, setTarget] = useState<number>(habit?.target ?? 1);
-  const [targetTime, setTargetTime] = useState<number>(
-    habit?.expectedDuration ? Math.round(habit.expectedDuration / 60) : 10
-  );
+  // State for all habit fields
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [type, setType] = useState<HabitType>('binary');
+  const [category, setCategory] = useState<HabitCategory>('other');
+  const [priority, setPriority] = useState<HabitPriority>('medium');
+  const [color, setColor] = useState<string>('#3B82F6');
+  const [icon, setIcon] = useState<string>('⭐');
+  const [target, setTarget] = useState<number>(1);
+  const [targetTime, setTargetTime] = useState<number>(10);
+  const [reminderTime, setReminderTime] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [tagsInput, setTagsInput] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+
+  // Populate form with existing habit data
+  useEffect(() => {
+    if (habit) {
+      setName(habit.name);
+      setDescription(habit.description || '');
+      setType(habit.type);
+      setCategory(habit.category || 'other');
+      setPriority(habit.priority || 'medium');
+      setColor(habit.color || '#3B82F6');
+      setIcon(habit.icon || '⭐');
+      setTarget(habit.target ?? 1);
+      setTargetTime(habit.expectedDuration ? Math.round(habit.expectedDuration / 60) : 10);
+      setReminderTime(habit.reminderTime || '');
+      setStartDate(habit.startDate || new Date().toISOString().split('T')[0]);
+      setEndDate(habit.endDate || '');
+      setTagsInput(habit.tags ? habit.tags.join(', ') : '');
+      setNotes(habit.notes || '');
+    }
+  }, [habit]);
 
   // Unknown habit → bounce back
   if (!habit) {
@@ -36,11 +112,23 @@ export function EditHabit() {
     e.preventDefault();
     if (!name.trim()) return;
 
+    const tags = tagsInput.split(',').map((t: string) => t.trim()).filter(Boolean);
+
     updateHabit(id!, {
       name: name.trim(),
+      description: description.trim() || undefined,
+      category,
       type,
+      priority,
+      color,
+      icon,
       target: type === 'count' ? target : undefined,
       expectedDuration: type === 'timer' ? targetTime * 60 : undefined,
+      reminderTime: reminderTime || undefined,
+      startDate,
+      endDate: endDate || undefined,
+      tags: tags.length > 0 ? tags : undefined,
+      notes: notes.trim() || undefined,
     });
 
     navigate('/');
@@ -65,17 +153,32 @@ export function EditHabit() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
 
-          {/* ── Name ─────────────────────────────────────────── */}
-          <div className="space-y-3">
-            <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Habit Name</Label>
-            <Input
-              autoFocus
-              placeholder="e.g. Read 10 Pages, Drink Water"
-              className="h-14 text-lg bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-            />
+          {/* ── Basic Info ─────────────────────────────────────── */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Habit Name</Label>
+              <Input 
+                autoFocus
+                placeholder="e.g. Read 10 Pages, Drink Water" 
+                className="h-14 text-lg bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Description
+              </Label>
+              <textarea
+                placeholder="What's this habit about? Why is it important?"
+                className="w-full min-h-[80px] p-3 rounded-lg border bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors resize-none"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* ── Type ─────────────────────────────────────────── */}
@@ -119,7 +222,7 @@ export function EditHabit() {
               <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">
                 {type === 'count' ? 'Daily Target Quantity' : 'Daily Target Time (Minutes)'}
               </Label>
-              <Input
+              <Input 
                 type="number"
                 min={1}
                 className="h-14 text-lg bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors w-1/2"
@@ -133,6 +236,143 @@ export function EditHabit() {
               />
             </div>
           )}
+
+          {/* ── Category ─────────────────────────────────────── */}
+          <div className="space-y-3">
+            <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Category</Label>
+            <select
+              value={category}
+              onChange={e => setCategory(e.target.value as HabitCategory)}
+              className="h-14 px-4 rounded-lg border bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors w-full"
+            >
+              {Object.entries(categoryLabels).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* ── Priority ─────────────────────────────────────── */}
+          <div className="space-y-3">
+            <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
+              <Star className="w-4 h-4" />
+              Priority
+            </Label>
+            <div className="grid grid-cols-3 gap-4">
+              {(['low', 'medium', 'high'] as HabitPriority[]).map((p) => (
+                <label key={p} className="cursor-pointer group">
+                  <input type="radio" className="peer sr-only" checked={priority === p} onChange={() => setPriority(p)} />
+                  <div className="flex items-center justify-center p-4 border rounded-xl bg-card peer-checked:border-primary peer-checked:bg-primary/5 transition-all capitalize font-medium">
+                    <div className={`w-3 h-3 rounded-full ${priorityColors[p]} mr-2`} />
+                    {p}
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Color ────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              Color
+            </Label>
+            <div className="flex flex-wrap gap-3">
+              {colorOptions.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-10 h-10 rounded-full border-2 transition-all ${color === c ? 'border-primary scale-110' : 'border-transparent hover:scale-105'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* ── Icon ─────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Icon</Label>
+            <div className="flex flex-wrap gap-3">
+              {iconOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setIcon(opt.value)}
+                  className={`w-12 h-12 flex items-center justify-center text-xl rounded-xl border-2 transition-all ${icon === opt.value ? 'border-primary bg-primary/5 scale-110' : 'border-transparent hover:bg-secondary/50'}`}
+                  title={opt.label}
+                >
+                  {opt.value}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Scheduling ───────────────────────────────────── */}
+          <div className="space-y-6 pt-4 border-t">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Scheduling
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Start Date</Label>
+                <Input 
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="h-12 bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors"
+                />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">End Date (Optional)</Label>
+                <Input 
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="h-12 bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
+                <Bell className="w-4 h-4" />
+                Daily Reminder Time (Optional)
+              </Label>
+              <Input 
+                type="time"
+                value={reminderTime}
+                onChange={e => setReminderTime(e.target.value)}
+                className="h-12 w-1/2 bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* ── Tags ─────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              Tags (comma-separated)
+            </Label>
+            <Input 
+              placeholder="e.g. morning, health, routine"
+              value={tagsInput}
+              onChange={e => setTagsInput(e.target.value)}
+              className="h-12 bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors"
+            />
+          </div>
+
+          {/* ── Notes ────────────────────────────────────────── */}
+          <div className="space-y-3">
+            <Label className="text-sm uppercase tracking-wider text-muted-foreground font-semibold">Notes</Label>
+            <textarea
+              placeholder="Additional notes, reflections, or context..."
+              className="w-full min-h-[80px] p-3 rounded-lg border bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors resize-none"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+            />
+          </div>
 
           {/* ── Actions ──────────────────────────────────────── */}
           <div className="pt-6 border-t flex flex-col sm:flex-row justify-end gap-3">

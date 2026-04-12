@@ -14,6 +14,7 @@ export * from './components/molecules/Dialog';
 export * from './components/molecules/StatCard';
 export * from './components/molecules/SectionHeader';
 export * from './components/molecules/ContributionMap';
+export * from './components/molecules/Tooltip';
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 export * from './lib/utils';
