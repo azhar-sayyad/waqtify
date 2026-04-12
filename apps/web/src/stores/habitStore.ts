@@ -42,7 +42,7 @@ interface HabitState {
 
   // Mutations
   addHabit: (habit: Habit) => void;
-  updateHabit: (habitId: string, fields: Partial<Pick<Habit, 'name' | 'type' | 'target' | 'expectedDuration' | 'category'>>) => void;
+  updateHabit: (habitId: string, fields: Partial<Pick<Habit, 'name' | 'description' | 'category' | 'type' | 'priority' | 'color' | 'icon' | 'target' | 'expectedDuration' | 'reminderTime' | 'startDate' | 'endDate' | 'tags' | 'notes'>>) => void;
   trackHabit: (habitId: string, date: string, params?: { count?: number; duration?: number }) => void;
   deleteHabit: (habitId: string) => void;
 

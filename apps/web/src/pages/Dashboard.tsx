@@ -6,14 +6,17 @@ import { Plus, Target, Flame, LayoutList, TrendingUp, ChevronRight, AlertTriangl
 import { formatISO, startOfDay, format, subDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
+import { HabitForm } from '../components/HabitForm';
 import type { Habit } from '@waqtify/types';
 
 export function Dashboard() {
   const { user } = useAuthStore();
-  const { habits, logs, trackHabit, deleteHabit, calculateStreak, getTodayStats, getWeeklyStats } = useHabitStore();
+  const { habits, logs, trackHabit, deleteHabit, addHabit, updateHabit, calculateStreak, getTodayStats, getWeeklyStats } = useHabitStore();
   const navigate = useNavigate();
 
-  // ── Delete-confirmation dialog state ──────────────────────────────────────
+  // ── Dialog states ─────────────────────────────────────────────────────────
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
 
   const todayStr = formatISO(startOfDay(new Date()), { representation: 'date' });
@@ -68,7 +71,7 @@ export function Dashboard() {
         </div>
 
         <Button
-          onClick={() => navigate('/add-habit')}
+          onClick={() => setIsAddDialogOpen(true)}
           className="shrink-0 group gap-2"
         >
           <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
@@ -149,7 +152,7 @@ export function Dashboard() {
             <p className="text-muted-foreground text-sm max-w-xs mb-6 leading-relaxed">
               Build your daily routine by adding your first habit. Small steps, compounding results.
             </p>
-            <Button variant="outline" onClick={() => navigate('/add-habit')}>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(true)}>
               Get Started
             </Button>
           </div>
@@ -170,7 +173,7 @@ export function Dashboard() {
                     onTrack={(count, duration) =>
                       trackHabit(habit.id, todayStr, { count, duration })
                     }
-                    onEdit={() => navigate(`/edit-habit/${habit.id}`)}
+                    onEdit={() => setHabitToEdit(habit)}
                     onDelete={() => setHabitToDelete(habit)}
                   />
                 </div>
@@ -201,6 +204,32 @@ export function Dashboard() {
           <ActivityHeatmap compact />
         </section>
       )}
+
+      {/* ── Add Habit Dialog ─────────────────────────────────────────── */}
+      <HabitForm
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSubmit={(habitData) => {
+          addHabit({
+            id: Math.random().toString(36).substring(2, 9),
+            createdAt: new Date().toISOString(),
+            ...habitData,
+          } as Habit);
+        }}
+      />
+
+      {/* ── Edit Habit Dialog ────────────────────────────────────────── */}
+      <HabitForm
+        isOpen={!!habitToEdit}
+        onClose={() => setHabitToEdit(null)}
+        onSubmit={(habitData) => {
+          if (habitToEdit) {
+            updateHabit(habitToEdit.id, habitData);
+          }
+        }}
+        initialData={habitToEdit || undefined}
+        isEditing={true}
+      />
 
       {/* ── Delete Confirmation Dialog ────────────────────────────────── */}
       <Dialog

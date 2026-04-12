@@ -11,13 +11,40 @@ export type User = z.infer<typeof UserSchema>;
 export const HabitTypeSchema = z.enum(['binary', 'count', 'timer']);
 export type HabitType = z.infer<typeof HabitTypeSchema>;
 
+export const HabitPrioritySchema = z.enum(['low', 'medium', 'high']);
+export type HabitPriority = z.infer<typeof HabitPrioritySchema>;
+
+export const HabitCategorySchema = z.enum([
+  'health_fitness',
+  'productivity',
+  'learning',
+  'mindfulness',
+  'social',
+  'finance',
+  'career',
+  'creativity',
+  'relationships',
+  'personal_development',
+  'other'
+]);
+export type HabitCategory = z.infer<typeof HabitCategorySchema>;
+
 export const HabitSchema = z.object({
   id: z.string(),
   name: z.string(),
-  category: z.string().optional(),
+  description: z.string().optional(),
+  category: HabitCategorySchema.optional(),
   type: HabitTypeSchema,
+  priority: HabitPrioritySchema.default('medium'),
+  color: z.string().optional(),
+  icon: z.string().optional(),
   target: z.number().optional(), // Used for 'count'
   expectedDuration: z.number().optional(), // Used for 'timer' in seconds
+  reminderTime: z.string().optional(), // HH:MM format
+  startDate: z.string(),
+  endDate: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  notes: z.string().optional(),
   createdAt: z.string(),
 });
 export type Habit = z.infer<typeof HabitSchema>;
