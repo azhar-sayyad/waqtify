@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
+import { useHabitStore } from './stores/habitStore';
+import { useSettingsStore } from './stores/settingsStore';
 import { Dashboard } from './pages/Dashboard';
 import { Landing } from './pages/Landing';
 import { Analytics } from './pages/Analytics';
@@ -13,12 +15,25 @@ import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 
+const StoreBootstrapper = () => {
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+
+  useEffect(() => {
+    if (userId) {
+      useHabitStore.getState().loadForUser(userId);
+      useSettingsStore.getState().loadForUser(userId);
+      return;
+    }
+
+    useHabitStore.getState().clear();
+    useSettingsStore.getState().clear();
+  }, [userId]);
+
+  return null;
+};
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => { setMounted(true) }, []);
-  if (!mounted) return null;
 
   if (!isAuthenticated) return <Navigate to="/landing" replace />;
   return <AppLayout>{children}</AppLayout>;
@@ -33,6 +48,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 export default function App() {
   return (
     <BrowserRouter>
+      <StoreBootstrapper />
       <Routes>
         {/* Core Auth & Landing Routes */}
         <Route path="/landing" element={<PublicRoute><Landing /></PublicRoute>} />

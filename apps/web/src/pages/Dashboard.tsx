@@ -1,18 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useHabitStore } from '../stores/habitStore';
-import { HabitCard, Button, StatCard, SectionHeader, Dialog } from '@waqtify/ui';
-import { Plus, Target, Flame, LayoutList, TrendingUp, ChevronRight, AlertTriangle, Calendar, Zap, Award, Activity } from 'lucide-react';
-import { formatISO, startOfDay, format, subDays } from 'date-fns';
+import { HabitCard, Button, StatCard, Dialog } from '@waqtify/ui';
+import { Plus, Target, Flame, LayoutList, TrendingUp, ChevronRight, AlertTriangle, Calendar, Zap, Activity } from 'lucide-react';
+import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
 import { HabitForm } from '../components/HabitForm';
-import { WeeklyStatsSection } from '../components/analytics/WeeklyStatsSection';
 import type { Habit } from '@waqtify/types';
+import { getLocalDateString } from '../domain/habits/date';
 
 export function Dashboard() {
   const { user } = useAuthStore();
-  const { habits, logs, trackHabit, deleteHabit, addHabit, updateHabit, calculateStreak, getTodayStats, getWeeklyStats } = useHabitStore();
+  const {
+    habits,
+    logs,
+    trackHabit,
+    deleteHabit,
+    createHabit,
+    updateHabit,
+    calculateStreak,
+    getDashboardSummary,
+  } = useHabitStore();
   const navigate = useNavigate();
 
   // ── Dialog states ─────────────────────────────────────────────────────────
@@ -20,23 +29,20 @@ export function Dashboard() {
   const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
 
-  const todayStr = formatISO(startOfDay(new Date()), { representation: 'date' });
-
-  // Today's stats
-  const { completed: completedToday, total: totalToday, percentage: completionPercentage } = getTodayStats();
-
-  // Highest current streak across all habits
-  const highestStreak = useMemo(
-    () => habits.reduce((max, h) => Math.max(max, calculateStreak(h.id)), 0),
-    [habits, calculateStreak]
+  const todayStr = getLocalDateString(new Date());
+  const dashboardSummary = useMemo(
+    () => getDashboardSummary(),
+    [getDashboardSummary, habits, logs]
   );
-
-  // 7-day average completion %
-  const weeklyStats = useMemo(() => getWeeklyStats(7), [getWeeklyStats]);
-  const weeklyAverage = useMemo(() => {
-    if (weeklyStats.length === 0) return 0;
-    return Math.round(weeklyStats.reduce((sum, d) => sum + d.rate, 0) / weeklyStats.length);
-  }, [weeklyStats]);
+  const {
+    today: {
+      completed: completedToday,
+      total: totalToday,
+      percentage: completionPercentage,
+    },
+    highestStreak,
+    weeklyAverage,
+  } = dashboardSummary;
 
   // Determine greeting by time of day
   const hour = new Date().getHours();
@@ -167,7 +173,7 @@ export function Dashboard() {
       </section>
 
       {/* ── Weekly Stats Section ──────────────────────────────────────── */}
-      {/* <WeeklyStatsSection data={weeklyStats} /> */}
+      {/* <WeeklyStatsSection data={dashboardSummary.weeklyCompletionSeries} /> */}
 
       {/* ── Today's Habits with Enhanced Section Header ────────────────── */}
       <section className="flex flex-col gap-5">
@@ -273,11 +279,7 @@ export function Dashboard() {
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
         onSubmit={(habitData) => {
-          addHabit({
-            id: Math.random().toString(36).substring(2, 9),
-            createdAt: new Date().toISOString(),
-            ...habitData,
-          } as Habit);
+          createHabit(habitData);
         }}
       />
 

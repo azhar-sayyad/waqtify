@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, User, Mail, Shield, Moon, Sun, Bell, Save, AlertCircle, CheckCircle, Target, Trash2, Download, Upload } from 'lucide-react';
 import { Button, Input, Label, Badge } from '@waqtify/ui';
+import { useAuthStore } from '../stores/authStore';
+import { useSettingsStore } from '../stores/settingsStore';
 
 interface UserProfile {
   name: string;
@@ -11,6 +13,10 @@ interface UserProfile {
 }
 
 export function Settings() {
+  const user = useAuthStore((state) => state.user);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
+  const persistedSettings = useSettingsStore((state) => state.settings);
+  const saveSettings = useSettingsStore((state) => state.saveSettings);
   const [profile, setProfile] = useState<UserProfile>({
     name: 'User',
     email: 'user@example.com',
@@ -21,34 +27,49 @@ export function Settings() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Load saved settings from localStorage on mount
   useEffect(() => {
-    const savedProfile = localStorage.getItem('userProfile');
-    if (savedProfile) {
-      try {
-        setProfile(JSON.parse(savedProfile));
-      } catch (e) {
-        console.error('Failed to parse saved profile:', e);
-      }
+    if (!user) {
+      return;
     }
-  }, []);
 
-  // Save settings to localStorage
+    setProfile({
+      name: user.name,
+      email: user.email,
+      theme: persistedSettings.theme,
+      notifications: persistedSettings.notifications,
+      dailyGoal: persistedSettings.dailyGoal,
+    });
+  }, [user, persistedSettings]);
+
   const handleSave = async () => {
     setIsSaving(true);
     setShowSuccess(false);
+    setErrorMessage('');
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      localStorage.setItem('userProfile', JSON.stringify(profile));
+      const profileResult = await updateProfile({
+        name: profile.name.trim(),
+        email: profile.email.trim(),
+      });
+
+      if (!profileResult.success) {
+        throw new Error(profileResult.message || 'Failed to update profile');
+      }
+
+      await saveSettings({
+        theme: profile.theme,
+        notifications: profile.notifications,
+        dailyGoal: profile.dailyGoal,
+      });
+
       setShowSuccess(true);
-      
-      // Hide success message after 3 seconds
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to save settings.';
+      setErrorMessage(message);
       console.error('Failed to save settings:', error);
     } finally {
       setIsSaving(false);
@@ -107,6 +128,12 @@ export function Settings() {
         </div>
       )}
 
+      {errorMessage && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+          {errorMessage}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Profile Section */}
@@ -152,7 +179,7 @@ export function Settings() {
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <AlertCircle className="w-4 h-4" />
-                <span>Note: Email is for display purposes only in this demo version</span>
+                <span>Use the same email here that you use to sign in locally.</span>
               </div>
             </div>
           </div>

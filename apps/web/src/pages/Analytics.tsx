@@ -23,60 +23,17 @@ const DATE_RANGE_OPTIONS: { label: string; value: DateRange }[] = [
 
 // ─── Analytics Page ────────────────────────────────────────────────────────
 export function Analytics() {
-  const { habits, logs, calculateStreak, calculateLongestStreak, getMissedDayStats, getHabitLeaderboard, getWeeklyStats } = useHabitStore();
+  const { habits, logs, getAnalyticsOverview } = useHabitStore();
   const [dateRange, setDateRange] = useState<DateRange>(30);
-
-  // ── KPI calculations ──────────────────────────────────────────────────
-  const kpis = useMemo(() => {
-    let totalCompleted = 0;
-    let maxCurrentStreak = 0;
-    let maxLongestStreak = 0;
-
-    habits.forEach(h => {
-      const hLogs = logs[h.id] || [];
-      totalCompleted += hLogs.filter(l => l.completed).length;
-      maxCurrentStreak = Math.max(maxCurrentStreak, calculateStreak(h.id));
-      maxLongestStreak = Math.max(maxLongestStreak, calculateLongestStreak(h.id));
-    });
-
-    // Overall completion rate for the selected window
-    let totalPossible = 0;
-    let totalDone = 0;
-    const cutoffStr = new Date(Date.now() - dateRange * 86400000).toISOString().slice(0, 10);
-
-    habits.forEach(h => {
-      const hLogs = logs[h.id] || [];
-      const recent = hLogs.filter(l => l.date >= cutoffStr);
-      totalDone += recent.filter(l => l.completed).length;
-      totalPossible += dateRange;
-    });
-
-    const overallRate = totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
-
-    return { totalCompleted, maxCurrentStreak, maxLongestStreak, overallRate };
-  }, [habits, logs, calculateStreak, calculateLongestStreak, dateRange]);
-
-  // ── Missed days data ──────────────────────────────────────────────────
-  const missedDaysData = useMemo(() => getMissedDayStats(dateRange), [getMissedDayStats, dateRange]);
-  const worstDay = useMemo(
-    () => [...missedDaysData].sort((a, b) => b.misses - a.misses)[0],
-    [missedDaysData]
+  const analyticsOverview = useMemo(
+    () => getAnalyticsOverview(dateRange),
+    [dateRange, getAnalyticsOverview, habits, logs]
   );
-
-  // ── Leaderboard data ──────────────────────────────────────────────────
-  const leaderboard = useMemo(() => getHabitLeaderboard(dateRange), [getHabitLeaderboard, dateRange]);
-
-  // ── Pie chart: per-habit completion share (last N days) ───────────────
-  const pieData = useMemo(() => {
-    const cutoffStr = new Date(Date.now() - dateRange * 86400000).toISOString().slice(0, 10);
-    return habits.map(h => {
-      const completed = (logs[h.id] || []).filter(l => l.date >= cutoffStr && l.completed).length;
-      return { name: h.name, value: completed };
-    }).filter(d => d.value > 0);
-  }, [habits, logs, dateRange]);
-
-  // ── Weekly progress line chart ────────────────────────────────────────
-  const weeklyProgress = useMemo(() => getWeeklyStats(Math.min(dateRange, 30)), [getWeeklyStats, dateRange]);
+  const worstDay = useMemo(
+    () =>
+      [...analyticsOverview.missedDays].sort((left, right) => right.misses - left.misses)[0],
+    [analyticsOverview.missedDays]
+  );
 
   const hasData = habits.length > 0;
 
@@ -126,21 +83,33 @@ export function Analytics() {
       </section>
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <KPICards data={{ ...kpis, dateRange }} />
+      <KPICards
+        data={{
+          totalCompleted: analyticsOverview.totalCompleted,
+          overallRate: analyticsOverview.overallRate,
+          maxCurrentStreak: analyticsOverview.maxCurrentStreak,
+          maxLongestStreak: analyticsOverview.maxLongestStreak,
+          dateRange,
+        }}
+      />
 
       {/* ── Activity Heatmap ───────────────────────────────────────────── */}
       <ActivityHeatmapSection />
 
       {/* ── Charts Grid ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <WeeklyProgressChartSection data={weeklyProgress} />
-        <MissedDaysChart data={missedDaysData} worstDay={worstDay} hasHabits={hasData} />
+        <WeeklyProgressChartSection data={analyticsOverview.dailyCompletionSeries} />
+        <MissedDaysChart
+          data={analyticsOverview.missedDays}
+          worstDay={worstDay}
+          hasHabits={hasData}
+        />
       </div>
 
       {/* ── Per-Habit Breakdown ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CompletionByHabitPieChart data={pieData} />
-        <PerHabitRates data={leaderboard} />
+        <CompletionByHabitPieChart data={analyticsOverview.completionShare} />
+        <PerHabitRates data={analyticsOverview.leaderboard} />
       </div>
 
       {/* ── Habit Leaderboard ──────────────────────────────────────────── */}
@@ -159,10 +128,11 @@ export function Analytics() {
               <p className="text-sm text-muted-foreground">All habits ranked by completion rate</p>
             </div>
             <Badge variant="secondary" className="text-sm px-4 py-2">
-              {leaderboard.length} {leaderboard.length === 1 ? 'habit' : 'habits'} tracked
+              {analyticsOverview.leaderboard.length}{' '}
+              {analyticsOverview.leaderboard.length === 1 ? 'habit' : 'habits'} tracked
             </Badge>
           </div>
-          <HabitLeaderboard data={leaderboard} />
+          <HabitLeaderboard data={analyticsOverview.leaderboard} />
         </div>
       </section>
     </div>

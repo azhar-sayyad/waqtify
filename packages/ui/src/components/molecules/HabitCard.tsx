@@ -1,5 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import type { Habit, HabitLog, HabitPriority, HabitCategory } from '@waqtify/types';
+import {
+  habitCategoryLabels,
+  habitPriorityClasses,
+  type Habit,
+  type HabitLog,
+} from '@waqtify/types';
 import { Button } from '../atoms/Button';
 import { ProgressRing } from '../atoms/ProgressRing';
 import { Check, Plus, Minus, Play, MoreVertical, Pencil, Trash2 } from 'lucide-react';
@@ -15,26 +20,6 @@ export interface HabitCardProps {
   /** Optional: trigger delete confirmation */
   onDelete?: () => void;
 }
-
-const categoryLabels: Record<HabitCategory, string> = {
-  health_fitness: 'Health & Fitness',
-  productivity: 'Productivity',
-  learning: 'Learning',
-  mindfulness: 'Mindfulness',
-  social: 'Social',
-  finance: 'Finance',
-  career: 'Career',
-  creativity: 'Creativity',
-  relationships: 'Relationships',
-  personal_development: 'Personal Development',
-  other: 'Other'
-};
-
-const priorityColors: Record<HabitPriority, string> = {
-  low: 'bg-green-500',
-  medium: 'bg-yellow-500',
-  high: 'bg-red-500'
-};
 
 export function HabitCard({ habit, todaysLog, onTrack, streakCount, onEdit, onDelete }: HabitCardProps) {
   const isCompleted = todaysLog?.completed || false;
@@ -123,7 +108,7 @@ export function HabitCard({ habit, todaysLog, onTrack, streakCount, onEdit, onDe
           {habit.priority && (
             <div className={cn(
               "absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-background",
-              priorityColors[habit.priority]
+              habitPriorityClasses[habit.priority]
             )} />
           )}
         </div>
@@ -140,7 +125,7 @@ export function HabitCard({ habit, todaysLog, onTrack, streakCount, onEdit, onDe
             {habit.category && (
               <>
                 <span>•</span>
-                <span>{categoryLabels[habit.category]}</span>
+                <span>{habitCategoryLabels[habit.category]}</span>
               </>
             )}
             {habit.tags && habit.tags.length > 0 && (

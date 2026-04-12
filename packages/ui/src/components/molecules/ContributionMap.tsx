@@ -113,15 +113,14 @@ export function ContributionMap({
 
   // Custom render function for blocks with tooltip support
   const renderBlock = (
-    element: React.ReactElement,
-    activity: CalendarActivity,
-    index: number
+    element: React.ReactElement<React.SVGProps<SVGRectElement>>,
+    activity: CalendarActivity
   ) => {
-    return React.cloneElement(element, {
+    return React.cloneElement<React.SVGProps<SVGRectElement>>(element, {
       onMouseEnter: (e: React.MouseEvent) => handleMouseEnter(e, activity),
       onMouseLeave: hideTooltip,
       style: {
-        ...element.props.style,
+        ...(element.props.style || {}),
         cursor: 'pointer',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease',
       },

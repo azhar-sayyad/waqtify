@@ -1,9 +1,10 @@
 import React from 'react';
 import { TrendingUp } from 'lucide-react';
 import { WeeklyProgressChart } from '../../components/WeeklyProgressChart';
+import type { DailyCompletionPoint } from '../../stores/habitStore';
 
 interface WeeklyProgressChartSectionProps {
-  data: any[];
+  data: DailyCompletionPoint[];
 }
 
 export function WeeklyProgressChartSection({ data }: WeeklyProgressChartSectionProps) {

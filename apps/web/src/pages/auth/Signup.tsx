@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button, Input, Label } from '@waqtify/ui';
-import { LayoutTemplate, User, Mail, Lock, ShieldCheck, ArrowRight, Quote } from 'lucide-react';
+import { LayoutTemplate, User, Mail, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function Signup() {
@@ -12,12 +12,18 @@ export function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const res = await signup(email, password, name);
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    const res = await signup(name, email, password);
     if (!res.success) setError(res.message || 'Registration failed');
     else navigate('/');
   };
@@ -126,6 +132,8 @@ export function Signup() {
                   type="password" 
                   placeholder="••••••••" 
                   className="pl-10 h-12 bg-secondary/30 border-transparent focus:border-primary transition-colors text-sm rounded-xl"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
                 />
               </div>
             </div>
