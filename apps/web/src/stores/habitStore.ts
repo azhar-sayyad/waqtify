@@ -4,20 +4,31 @@ import { habitService } from '../application/services';
 import {
   calculateLongestStreak,
   calculateStreak,
+  getAnalyticsOverview,
   getActivityCalendarData,
   getCompletionRate,
+  getDashboardSummary,
   getHabitLeaderboard,
   getMissedDayStats,
   getTodayStats,
   getWeeklyStats,
   type ActivityDay,
+  type DashboardSummary,
   type DailyCompletionPoint,
   type HabitCompletionStat,
+  type HabitAnalyticsOverview,
   type MissedDayData,
 } from '../domain/habits/analytics';
 import type { HabitTrackingInput, HabitUpsertInput } from '../domain/habits/types';
 
-export type { ActivityDay, DailyCompletionPoint, HabitCompletionStat, MissedDayData };
+export type {
+  ActivityDay,
+  DashboardSummary,
+  DailyCompletionPoint,
+  HabitAnalyticsOverview,
+  HabitCompletionStat,
+  MissedDayData,
+};
 
 interface HabitState {
   userId: string | null;
@@ -37,6 +48,8 @@ interface HabitState {
   getMissedDayStats: (days: number) => MissedDayData[];
   getHabitLeaderboard: (days: number) => HabitCompletionStat[];
   getTodayStats: () => { completed: number; total: number; percentage: number };
+  getDashboardSummary: () => DashboardSummary;
+  getAnalyticsOverview: (days: number) => HabitAnalyticsOverview;
 }
 
 const emptyState = {
@@ -105,4 +118,8 @@ export const useHabitStore = create<HabitState>()((set, get) => ({
   getHabitLeaderboard: (days) => getHabitLeaderboard(get().habits, get().logs, days),
 
   getTodayStats: () => getTodayStats(get().habits, get().logs),
+
+  getDashboardSummary: () => getDashboardSummary(get().habits, get().logs),
+
+  getAnalyticsOverview: (days) => getAnalyticsOverview(get().habits, get().logs, days),
 }));

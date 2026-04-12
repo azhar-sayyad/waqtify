@@ -1,4 +1,12 @@
-import type { Habit, HabitCategory, HabitPriority } from '@waqtify/types';
+import {
+  habitCategoryLabels,
+  habitColorOptions,
+  habitIconOptions,
+  habitPriorityClasses,
+  type Habit,
+  type HabitCategory,
+  type HabitPriority,
+} from '@waqtify/types';
 import type { HabitUpsertInput } from './types';
 import { getLocalDateString } from './date';
 
@@ -19,53 +27,13 @@ export interface HabitFormValues {
   notes: string;
 }
 
-export const categoryLabels: Record<HabitCategory, string> = {
-  health_fitness: 'Health & Fitness',
-  productivity: 'Productivity',
-  learning: 'Learning',
-  mindfulness: 'Mindfulness',
-  social: 'Social',
-  finance: 'Finance',
-  career: 'Career',
-  creativity: 'Creativity',
-  relationships: 'Relationships',
-  personal_development: 'Personal Development',
-  other: 'Other',
-};
+export const categoryLabels: Record<HabitCategory, string> = habitCategoryLabels;
 
-export const priorityColors: Record<HabitPriority, string> = {
-  low: 'bg-green-500',
-  medium: 'bg-yellow-500',
-  high: 'bg-red-500',
-};
+export const priorityColors: Record<HabitPriority, string> = habitPriorityClasses;
 
-export const iconOptions = [
-  { value: '💪', label: 'Muscle' },
-  { value: '📚', label: 'Book' },
-  { value: '🧘', label: 'Meditation' },
-  { value: '💧', label: 'Water' },
-  { value: '🏃', label: 'Running' },
-  { value: '✍️', label: 'Writing' },
-  { value: '🎨', label: 'Art' },
-  { value: '💰', label: 'Money' },
-  { value: '🎯', label: 'Target' },
-  { value: '⭐', label: 'Star' },
-  { value: '🌱', label: 'Plant' },
-  { value: '🎵', label: 'Music' },
-];
+export const iconOptions = [...habitIconOptions];
 
-export const colorOptions = [
-  '#3B82F6',
-  '#10B981',
-  '#F59E0B',
-  '#EF4444',
-  '#8B5CF6',
-  '#EC4899',
-  '#06B6D4',
-  '#84CC16',
-  '#F97316',
-  '#6366F1',
-];
+export const colorOptions = [...habitColorOptions];
 
 export const createDefaultHabitFormValues = (): HabitFormValues => ({
   name: '',

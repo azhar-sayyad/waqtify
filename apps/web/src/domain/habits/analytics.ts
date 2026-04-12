@@ -1,10 +1,10 @@
 import type { Habit, HabitLog } from '@waqtify/types';
 import {
-  differenceInDays,
   eachDayOfInterval,
   endOfYear,
   format,
   getDay,
+  parseISO,
   startOfYear,
   subDays,
 } from 'date-fns';
@@ -38,6 +38,34 @@ export interface MissedDayData {
   misses: number;
 }
 
+export interface CompletionShareDatum {
+  id: string;
+  name: string;
+  value: number;
+}
+
+export interface HabitAnalyticsOverview {
+  totalCompleted: number;
+  overallRate: number;
+  maxCurrentStreak: number;
+  maxLongestStreak: number;
+  completionShare: CompletionShareDatum[];
+  dailyCompletionSeries: DailyCompletionPoint[];
+  missedDays: MissedDayData[];
+  leaderboard: HabitCompletionStat[];
+}
+
+export interface DashboardSummary {
+  today: {
+    completed: number;
+    total: number;
+    percentage: number;
+  };
+  highestStreak: number;
+  weeklyAverage: number;
+  weeklyCompletionSeries: DailyCompletionPoint[];
+}
+
 const countToLevel = (count: number, max: number): 0 | 1 | 2 | 3 | 4 => {
   if (count === 0 || max === 0) return 0;
   const ratio = count / max;
@@ -47,15 +75,42 @@ const countToLevel = (count: number, max: number): 0 | 1 | 2 | 3 | 4 => {
   return 1;
 };
 
-const getHabitActivationDate = (habit: Habit): Date => {
-  if (habit.startDate) return new Date(habit.startDate);
-  return new Date(habit.createdAt);
+const getHabitStartDate = (habit: Habit): string =>
+  habit.startDate || getLocalDateString(new Date(habit.createdAt));
+
+const isHabitActiveOnDate = (habit: Habit, date: string): boolean => {
+  if (date < getHabitStartDate(habit)) return false;
+  if (habit.endDate && date > habit.endDate) return false;
+  return true;
+};
+
+const hasCompletedLogForDate = (habitLogs: HabitLog[], date: string): boolean =>
+  habitLogs.some((log) => log.date === date && log.completed);
+
+const getWindowDates = (days: number, now = new Date()): string[] =>
+  Array.from({ length: days }, (_, index) =>
+    getLocalDateString(subDays(now, days - 1 - index))
+  );
+
+const getEligibleDatesForHabit = (
+  habit: Habit,
+  days: number,
+  now = new Date()
+): string[] => getWindowDates(days, now).filter((date) => isHabitActiveOnDate(habit, date));
+
+const getCompletedCountInDates = (habitLogs: HabitLog[], dates: string[]): number => {
+  const completedDates = new Set(
+    habitLogs.filter((log) => log.completed).map((log) => log.date)
+  );
+  return dates.filter((date) => completedDates.has(date)).length;
 };
 
 export const calculateStreak = (habitLogs: HabitLog[], now = new Date()): number => {
   if (habitLogs.length === 0) return 0;
 
-  const completedDates = new Set(habitLogs.filter((log) => log.completed).map((log) => log.date));
+  const completedDates = new Set(
+    habitLogs.filter((log) => log.completed).map((log) => log.date)
+  );
   if (completedDates.size === 0) return 0;
 
   let streak = 0;
@@ -64,14 +119,14 @@ export const calculateStreak = (habitLogs: HabitLog[], now = new Date()): number
   let checkDateStr = getLocalDateString(checkDate);
 
   if (!completedDates.has(todayStr)) {
-    checkDate = new Date(now.getTime() - 86400000);
+    checkDate = subDays(now, 1);
     checkDateStr = getLocalDateString(checkDate);
     if (!completedDates.has(checkDateStr)) return 0;
   }
 
   while (completedDates.has(checkDateStr)) {
     streak++;
-    checkDate = new Date(checkDate.getTime() - 86400000);
+    checkDate = subDays(checkDate, 1);
     checkDateStr = getLocalDateString(checkDate);
     if (streak > 5000) break;
   }
@@ -85,7 +140,7 @@ export const calculateLongestStreak = (habitLogs: HabitLog[]): number => {
   const sortedDates = habitLogs
     .filter((log) => log.completed)
     .map((log) => log.date)
-    .sort((a, b) => b.localeCompare(a));
+    .sort((left, right) => right.localeCompare(left));
 
   if (sortedDates.length === 0) return 0;
 
@@ -93,8 +148,8 @@ export const calculateLongestStreak = (habitLogs: HabitLog[]): number => {
   let currentStreak = 1;
 
   for (let index = 0; index < sortedDates.length - 1; index++) {
-    const current = new Date(sortedDates[index]);
-    const next = new Date(sortedDates[index + 1]);
+    const current = parseISO(sortedDates[index]);
+    const next = parseISO(sortedDates[index + 1]);
     const diffDays = Math.round((current.getTime() - next.getTime()) / 86400000);
 
     if (diffDays === 1) {
@@ -114,12 +169,11 @@ export const getCompletionRate = (
   days: number,
   now = new Date()
 ): number => {
-  const cutoff = getLocalDateString(subDays(now, days));
-  const recentCompleted = habitLogs.filter((log) => log.date >= cutoff && log.completed).length;
-  const activationDate = getHabitActivationDate(habit);
-  const maxDays = Math.min(days, differenceInDays(now, activationDate) + 1);
+  const eligibleDates = getEligibleDatesForHabit(habit, days, now);
+  if (eligibleDates.length === 0) return 0;
 
-  return maxDays > 0 ? Math.min(100, Math.round((recentCompleted / maxDays) * 100)) : 0;
+  const completed = getCompletedCountInDates(habitLogs, eligibleDates);
+  return Math.min(100, Math.round((completed / eligibleDates.length) * 100));
 };
 
 export const getActivityCalendarData = (
@@ -132,50 +186,44 @@ export const getActivityCalendarData = (
   const end = endOfYear(new Date(year, 0, 1));
   const effectiveEnd = end > now ? now : end;
   const allDays = eachDayOfInterval({ start, end: effectiveEnd });
-  const maxHabits = Math.max(1, habits.length);
 
   return allDays.map((day) => {
-    const dateStr = getLocalDateString(day);
-    let count = 0;
-    habits.forEach((habit) => {
-      if (logs[habit.id]?.find((log) => log.date === dateStr && log.completed)) {
-        count++;
-      }
-    });
+    const date = getLocalDateString(day);
+    const activeHabits = habits.filter((habit) => isHabitActiveOnDate(habit, date));
+    const completed = activeHabits.filter((habit) =>
+      hasCompletedLogForDate(logs[habit.id] || [], date)
+    ).length;
 
     return {
-      date: dateStr,
-      count,
-      level: countToLevel(count, maxHabits),
+      date,
+      count: completed,
+      level: countToLevel(completed, activeHabits.length),
     };
   });
 };
 
-export const getWeeklyStats = (
+export const getDailyCompletionSeries = (
   habits: Habit[],
   logs: Record<string, HabitLog[]>,
   days: number,
   now = new Date()
 ): DailyCompletionPoint[] =>
-  Array.from({ length: days }, (_, index) => {
-    const day = subDays(now, days - 1 - index);
-    const dateStr = getLocalDateString(day);
-    const total = habits.length;
-    let completed = 0;
-
-    habits.forEach((habit) => {
-      if (logs[habit.id]?.find((log) => log.date === dateStr && log.completed)) {
-        completed++;
-      }
-    });
+  getWindowDates(days, now).map((date) => {
+    const eligibleHabits = habits.filter((habit) => isHabitActiveOnDate(habit, date));
+    const completed = eligibleHabits.filter((habit) =>
+      hasCompletedLogForDate(logs[habit.id] || [], date)
+    ).length;
+    const total = eligibleHabits.length;
 
     return {
-      date: format(day, 'MMM d'),
+      date: format(parseISO(date), 'MMM d'),
       rate: total > 0 ? Math.round((completed / total) * 100) : 0,
       completed,
       total,
     };
   });
+
+export const getWeeklyStats = getDailyCompletionSeries;
 
 export const getMissedDayStats = (
   habits: Habit[],
@@ -184,20 +232,13 @@ export const getMissedDayStats = (
   now = new Date()
 ): MissedDayData[] => {
   const weekCounts = [0, 0, 0, 0, 0, 0, 0];
-  const allDates: string[] = [];
-  let currentDate = subDays(now, days - 1);
 
-  for (let index = 0; index < days; index++) {
-    allDates.push(getLocalDateString(currentDate));
-    currentDate = new Date(currentDate.getTime() + 86400000);
-  }
+  getWindowDates(days, now).forEach((date) => {
+    habits.forEach((habit) => {
+      if (!isHabitActiveOnDate(habit, date)) return;
 
-  habits.forEach((habit) => {
-    const habitLogs = logs[habit.id] || [];
-    allDates.forEach((dateStr) => {
-      const logForDate = habitLogs.find((log) => log.date === dateStr);
-      if (!logForDate || !logForDate.completed) {
-        weekCounts[getDay(new Date(dateStr))]++;
+      if (!hasCompletedLogForDate(logs[habit.id] || [], date)) {
+        weekCounts[getDay(parseISO(date))]++;
       }
     });
   });
@@ -218,40 +259,138 @@ export const getHabitLeaderboard = (
   logs: Record<string, HabitLog[]>,
   days: number,
   now = new Date()
-): HabitCompletionStat[] => {
-  const cutoff = getLocalDateString(subDays(now, days));
-
-  return habits
+): HabitCompletionStat[] =>
+  habits
     .map((habit) => {
       const habitLogs = logs[habit.id] || [];
-      const recentLogs = habitLogs.filter((log) => log.date >= cutoff);
-      const completed = recentLogs.filter((log) => log.completed).length;
-      const possible = Math.min(days, differenceInDays(now, getHabitActivationDate(habit)) + 1);
+      const eligibleDates = getEligibleDatesForHabit(habit, days, now);
+      const completed = getCompletedCountInDates(habitLogs, eligibleDates);
 
       return {
         id: habit.id,
         name: habit.name,
         percentage: getCompletionRate(habit, habitLogs, days, now),
         completed,
-        possible,
+        possible: eligibleDates.length,
         currentStreak: calculateStreak(habitLogs, now),
         longestStreak: calculateLongestStreak(habitLogs),
       };
     })
     .sort((left, right) => right.percentage - left.percentage);
-};
 
 export const getTodayStats = (
   habits: Habit[],
   logs: Record<string, HabitLog[]>,
   now = new Date()
 ): { completed: number; total: number; percentage: number } => {
-  const todayStr = getLocalDateString(now);
-  const total = habits.length;
-  const completed = habits.filter((habit) =>
-    logs[habit.id]?.find((log) => log.date === todayStr && log.completed)
+  const today = getLocalDateString(now);
+  const eligibleHabits = habits.filter((habit) => isHabitActiveOnDate(habit, today));
+  const total = eligibleHabits.length;
+  const completed = eligibleHabits.filter((habit) =>
+    hasCompletedLogForDate(logs[habit.id] || [], today)
   ).length;
-  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  return { completed, total, percentage };
+  return {
+    completed,
+    total,
+    percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+  };
+};
+
+export const getAnalyticsOverview = (
+  habits: Habit[],
+  logs: Record<string, HabitLog[]>,
+  days: number,
+  now = new Date()
+): HabitAnalyticsOverview => {
+  const leaderboard = getHabitLeaderboard(habits, logs, days, now);
+  const dailyCompletionSeries = getDailyCompletionSeries(
+    habits,
+    logs,
+    Math.min(days, 30),
+    now
+  );
+  const missedDays = getMissedDayStats(habits, logs, days, now);
+
+  const totalCompleted = habits.reduce(
+    (sum, habit) => sum + (logs[habit.id] || []).filter((log) => log.completed).length,
+    0
+  );
+
+  const totals = leaderboard.reduce(
+    (accumulator, stat) => {
+      accumulator.completed += stat.completed;
+      accumulator.possible += stat.possible;
+      accumulator.maxCurrentStreak = Math.max(
+        accumulator.maxCurrentStreak,
+        stat.currentStreak
+      );
+      accumulator.maxLongestStreak = Math.max(
+        accumulator.maxLongestStreak,
+        stat.longestStreak
+      );
+      return accumulator;
+    },
+    {
+      completed: 0,
+      possible: 0,
+      maxCurrentStreak: 0,
+      maxLongestStreak: 0,
+    }
+  );
+
+  const completionShare = habits
+    .map((habit) => {
+      const eligibleDates = getEligibleDatesForHabit(habit, days, now);
+      const completed = getCompletedCountInDates(logs[habit.id] || [], eligibleDates);
+
+      return {
+        id: habit.id,
+        name: habit.name,
+        value: completed,
+      };
+    })
+    .filter((datum) => datum.value > 0)
+    .sort((left, right) => right.value - left.value);
+
+  return {
+    totalCompleted,
+    overallRate:
+      totals.possible > 0
+        ? Math.round((totals.completed / totals.possible) * 100)
+        : 0,
+    maxCurrentStreak: totals.maxCurrentStreak,
+    maxLongestStreak: totals.maxLongestStreak,
+    completionShare,
+    dailyCompletionSeries,
+    missedDays,
+    leaderboard,
+  };
+};
+
+export const getDashboardSummary = (
+  habits: Habit[],
+  logs: Record<string, HabitLog[]>,
+  now = new Date()
+): DashboardSummary => {
+  const today = getTodayStats(habits, logs, now);
+  const weeklyCompletionSeries = getDailyCompletionSeries(habits, logs, 7, now);
+  const highestStreak = habits.reduce(
+    (max, habit) => Math.max(max, calculateStreak(logs[habit.id] || [], now)),
+    0
+  );
+  const weeklyAverage =
+    weeklyCompletionSeries.length > 0
+      ? Math.round(
+          weeklyCompletionSeries.reduce((sum, day) => sum + day.rate, 0) /
+            weeklyCompletionSeries.length
+        )
+      : 0;
+
+  return {
+    today,
+    highestStreak,
+    weeklyAverage,
+    weeklyCompletionSeries,
+  };
 };
