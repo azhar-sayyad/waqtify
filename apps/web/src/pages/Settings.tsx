@@ -3,6 +3,7 @@ import { Settings as SettingsIcon, User, Mail, Shield, Moon, Sun, Bell, Save, Al
 import { Button, Input, Label, Badge } from '@waqtify/ui';
 import { useAuthStore } from '../stores/authStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { applyThemePreference } from '../lib/theme';
 
 interface UserProfile {
   name: string;
@@ -17,13 +18,13 @@ export function Settings() {
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const persistedSettings = useSettingsStore((state) => state.settings);
   const saveSettings = useSettingsStore((state) => state.saveSettings);
-  const [profile, setProfile] = useState<UserProfile>({
-    name: 'User',
-    email: 'user@example.com',
-    theme: 'system',
-    notifications: true,
-    dailyGoal: 5,
-  });
+  const [profile, setProfile] = useState<UserProfile>(() => ({
+    name: user?.name ?? 'User',
+    email: user?.email ?? 'user@example.com',
+    theme: persistedSettings.theme,
+    notifications: persistedSettings.notifications,
+    dailyGoal: persistedSettings.dailyGoal,
+  }));
 
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -42,6 +43,16 @@ export function Settings() {
       dailyGoal: persistedSettings.dailyGoal,
     });
   }, [user, persistedSettings]);
+
+  useEffect(() => {
+    applyThemePreference(profile.theme);
+  }, [profile.theme]);
+
+  useEffect(() => {
+    return () => {
+      applyThemePreference(persistedSettings.theme);
+    };
+  }, [persistedSettings.theme]);
 
   const handleSave = async () => {
     setIsSaving(true);

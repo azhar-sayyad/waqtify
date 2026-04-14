@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ActivityCalendar } from 'react-activity-calendar';
 import type { Activity as CalendarActivity } from 'react-activity-calendar';
+import type { ColorScheme } from 'react-activity-calendar';
 import { Tooltip, useTooltip } from './Tooltip';
 
 // Re-export the Activity type so consumers use our local alias
@@ -23,6 +24,7 @@ interface ContributionMapProps {
    * Defaults to the Waqtify blue palette.
    */
   colorScale?: [string, string, string, string, string];
+  colorScheme?: ColorScheme;
 }
 
 /**
@@ -43,6 +45,7 @@ export function ContributionMap({
   blockGap = 4,
   fontSize = 12,
   colorScale,
+  colorScheme,
 }: ContributionMapProps) {
   // react-activity-calendar needs at least one entry; guard against empty data
   if (!data || data.length === 0) {
@@ -56,11 +59,11 @@ export function ContributionMap({
   // Match the app's primary color: hsl(221, 83%, 53%) — a vivid blue
   // Light scheme: from very pale blue → saturated primary blue
   const defaultLightScale: [string, string, string, string, string] = [
-    'hsl(210, 40%, 93%)',    // level 0 — matches secondary bg
-    'hsl(221, 70%, 80%)',    // level 1 — light blue
-    'hsl(221, 75%, 67%)',    // level 2
-    'hsl(221, 80%, 57%)',    // level 3
-    'hsl(221, 83%, 46%)',    // level 4 — primary (slightly darker for contrast)
+    'hsl(var(--heatmap-level-0))',
+    'hsl(var(--heatmap-level-1))',
+    'hsl(var(--heatmap-level-2))',
+    'hsl(var(--heatmap-level-3))',
+    'hsl(var(--heatmap-level-4))',
   ];
 
   const scale = colorScale ?? defaultLightScale;
@@ -128,14 +131,14 @@ export function ContributionMap({
   };
 
   return (
-    <div ref={containerRef} className="w-full overflow-x-auto">
+    <div ref={containerRef} className="w-full overflow-x-auto" style={{ color: 'hsl(var(--chart-muted))' }}>
       <ActivityCalendar
         data={data}
         blockSize={blockSize}
         blockMargin={blockGap}
         blockRadius={4}
         fontSize={fontSize}
-        colorScheme="light"
+        colorScheme={colorScheme}
         showWeekdayLabels
         showTotalCount={showTotalCount}
         showColorLegend={showLegend}
@@ -145,6 +148,7 @@ export function ContributionMap({
         }}
         theme={{
           light: scale,
+          dark: scale,
         }}
         renderBlock={renderBlock}
         // Disable built-in tooltips since we have custom ones

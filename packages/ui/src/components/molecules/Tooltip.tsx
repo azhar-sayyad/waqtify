@@ -39,11 +39,11 @@ export function Tooltip({
   if (!data || !data.visible) return null;
 
   const variantStyles = {
-    default: 'border-slate-700',
-    success: 'border-emerald-700',
-    warning: 'border-amber-700',
-    error: 'border-red-700',
-    info: 'border-blue-700',
+    default: 'border-border',
+    success: 'border-emerald-500/40',
+    warning: 'border-amber-500/40',
+    error: 'border-red-500/40',
+    info: 'border-blue-500/40',
   };
 
   const variantIndicator = {
@@ -78,11 +78,11 @@ export function Tooltip({
         {/* Arrow */}
         <div 
           className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-l-transparent border-r-transparent"
-          style={{ borderTopColor: 'hsl(217 19% 18%)' }}
+          style={{ borderTopColor: 'hsl(var(--card))' }}
         />
         
         {/* Tooltip card */}
-        <div className={`bg-slate-800 rounded-xl shadow-2xl p-4 min-w-[180px] border ${variantStyles[data.variant || 'default']} ${className}`}>
+        <div className={`bg-card text-card-foreground rounded-xl shadow-2xl p-4 min-w-[180px] border ${variantStyles[data.variant || 'default']} ${className}`}>
           {renderContent ? (
             renderContent(data)
           ) : (
@@ -92,17 +92,17 @@ export function Tooltip({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {data.title && (
-                      <p className="text-white font-semibold text-sm">{data.title}</p>
+                      <p className="text-foreground font-semibold text-sm">{data.title}</p>
                     )}
                     {data.subtitle && (
-                      <p className="text-slate-400 text-xs mt-0.5">{data.subtitle}</p>
+                      <p className="text-muted-foreground text-xs mt-0.5">{data.subtitle}</p>
                     )}
                   </div>
                   {data.emoji && (
                     <span className="text-xl shrink-0">{data.emoji}</span>
                   )}
                   {data.icon && (
-                    <div className="shrink-0 text-slate-400">
+                    <div className="shrink-0 text-muted-foreground">
                       {data.icon}
                     </div>
                   )}
@@ -119,9 +119,9 @@ export function Tooltip({
                       boxShadow: `0 0 8px ${data.indicator.color}40`
                     }}
                   />
-                  <span className="text-slate-300 text-sm">
+                  <span className="text-muted-foreground text-sm">
                     {data.indicator.label && (
-                      <span className="text-white font-bold">{data.indicator.label}</span>
+                      <span className="text-foreground font-bold">{data.indicator.label}</span>
                     )}
                     {data.content && (
                       <span>{data.content}</span>
@@ -132,7 +132,7 @@ export function Tooltip({
               
               {/* Just content (no indicator) */}
               {!data.indicator && data.content && (
-                <p className="text-slate-300 text-sm">{data.content}</p>
+                <p className="text-muted-foreground text-sm">{data.content}</p>
               )}
             </div>
           )}

@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useHabitStore } from '../stores/habitStore';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useResolvedTheme } from '../lib/theme';
 import { ContributionMap } from '@waqtify/ui';
 
 
@@ -22,6 +24,8 @@ interface ActivityHeatmapProps {
 export function ActivityHeatmap({ compact = false, year: initialYear, className = '' }: ActivityHeatmapProps) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(initialYear ?? currentYear);
+  const themePreference = useSettingsStore((state) => state.settings.theme);
+  const resolvedTheme = useResolvedTheme(themePreference);
 
   const getActivityCalendarData = useHabitStore(s => s.getActivityCalendarData);
 
@@ -57,6 +61,7 @@ export function ActivityHeatmap({ compact = false, year: initialYear, className 
 
       <ContributionMap
         data={data}
+        colorScheme={resolvedTheme}
         countLabel="habits completed"
         showLegend={!compact}
         blockSize={compact ? 11 : 13}
