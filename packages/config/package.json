@@ -2,9 +2,14 @@
   "name": "@waqtify/config",
   "version": "1.0.0",
   "private": true,
-  "main": "index.js",
+  "type": "module",
+  "main": "eslint.config.js",
   "dependencies": {
     "eslint": "^9.0.0",
     "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
+    "@typescript-eslint/parser": "^8.58.1"
   }
 }

@@ -1,97 +1,118 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
 import { useNavigate, Link } from 'react-router-dom';
-import { Button, Input, Label, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@waqtify/ui';
-import { z } from 'zod';
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-});
+import { Button, Input, Label } from '@waqtify/ui';
+import { LayoutTemplate, Mail, Lock, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export function Login() {
-  const login = useAuthStore(s => s.login);
+  const login = useAuthStore(state => state.login);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitError, setSubmitError] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
-    setSubmitError('');
-
-    const parsed = loginSchema.safeParse({ email, password });
-    if (!parsed.success) {
-      const formatted = parsed.error.format();
-      setErrors({
-        email: formatted.email?._errors[0] || '',
-        password: formatted.password?._errors[0] || '',
-      });
-      return;
-    }
-
-    const result = await login(email, password); // Using raw password as hash for local simulation
-    if (result.success) {
-       navigate('/');
-    } else {
-       setSubmitError(result.message || "Failed to log in.");
-    }
+    setError('');
+    const res = await login(email, password);
+    if (!res.success) setError(res.message || 'Login failed');
+    else navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Sign In</CardTitle>
-            <CardDescription>Enter your email below to log into your account.</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-               {submitError && <p className="text-sm font-semibold text-destructive">{submitError}</p>}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="m@example.com" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button className="w-full" type="submit">Sign In</Button>
-              <div className="text-center text-sm text-muted-foreground w-full">
-                Don't have an account?{" "}
-                <Link to="/auth/signup" className="text-primary hover:underline">
-                  Sign up
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
-        </Card>
+    <div className="min-h-screen bg-background relative flex flex-col items-center justify-center p-6 overflow-hidden">
+      {/* Background Ornaments */}
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[50%] rounded-full bg-purple-500/20 blur-[120px] pointer-events-none" />
+
+      {/* Decorative Left Progression Line */}
+      <div className="hidden xl:flex absolute left-20 top-1/2 -translate-y-1/2 items-center rotate-[-90deg] origin-left opacity-30">
+        <div className="w-12 h-1 bg-primary mr-4 rounded-full"></div>
+        <span className="tracking-[0.3em] font-bold text-xs uppercase text-foreground">Progression</span>
+      </div>
+
+      {/* Brand Header */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10 relative z-10">
+        <div className="flex items-center justify-center gap-2 mb-2">
+           <LayoutTemplate className="w-8 h-8 text-primary" />
+           <h1 className="text-3xl font-extrabold tracking-tight">Waqtify</h1>
+        </div>
+        <p className="text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">The Canvas of Consistency</p>
       </motion.div>
+
+      {/* Main Card */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }} 
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md bg-card/80 backdrop-blur-2xl border border-border/50 rounded-3xl p-8 shadow-2xl relative z-10"
+      >
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold tracking-tight mb-2">Welcome back</h2>
+          <p className="text-muted-foreground text-sm">Resume your journey of mindful choices.</p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg text-center font-medium">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground px-1">Email Address</Label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                required 
+                type="email" 
+                placeholder="julian@example.com" 
+                className="pl-10 h-12 bg-secondary/30 border-transparent focus:border-primary transition-colors text-sm rounded-xl"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-1">
+              <Label className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Password</Label>
+              <Link to="/auth/forgot-password" className="text-xs font-semibold text-primary hover:underline">Forgot?</Link>
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                required 
+                type="password" 
+                placeholder="••••••••" 
+                className="pl-10 h-12 bg-secondary/30 border-transparent focus:border-primary transition-colors text-sm rounded-xl"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full h-12 rounded-xl mt-4 font-semibold group flex items-center justify-center gap-2">
+            Access Dashboard
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </form>
+
+        <div className="mt-8 pt-8 border-t border-border/50 flex flex-col items-center">
+          <p className="text-sm text-muted-foreground mb-4">Don't have an account?</p>
+          <Button variant="outline" className="rounded-full px-8 h-10 border-border hover:bg-secondary transition-colors" onClick={() => navigate('/auth/signup')}>
+             Create Account
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Footer Links */}
+      <div className="mt-12 flex gap-8 text-[10px] font-bold tracking-widest uppercase text-muted-foreground relative z-10">
+         <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
+         <a href="#" className="hover:text-foreground transition-colors">Terms</a>
+         <a href="#" className="hover:text-foreground transition-colors">Help Center</a>
+      </div>
     </div>
   );
 }

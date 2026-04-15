@@ -1,107 +1,125 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { immer } from 'zustand/middleware/immer';
 import type { Habit, HabitLog } from '@waqtify/types';
-import { startOfDay, formatISO } from 'date-fns';
+import { habitService } from '../application/services';
+import {
+  calculateLongestStreak,
+  calculateStreak,
+  getAnalyticsOverview,
+  getActivityCalendarData,
+  getCompletionRate,
+  getDashboardSummary,
+  getHabitLeaderboard,
+  getMissedDayStats,
+  getTodayStats,
+  getWeeklyStats,
+  type ActivityDay,
+  type DashboardSummary,
+  type DailyCompletionPoint,
+  type HabitCompletionStat,
+  type HabitAnalyticsOverview,
+  type MissedDayData,
+} from '../domain/habits/analytics';
+import type { HabitTrackingInput, HabitUpsertInput } from '../domain/habits/types';
 
-interface HabitState {
-  habits: Habit[];
-  logs: Record<string, HabitLog[]>; // Keyed by habit id
-  addHabit: (habit: Habit) => void;
-  trackHabit: (habitId: string, date: string, params?: { count?: number; duration?: number }) => void;
-  calculateStreak: (habitId: string) => number;
-}
-
-const getLocalDateString = (dateObj: Date) => {
-  return formatISO(startOfDay(dateObj), { representation: 'date' });
+export type {
+  ActivityDay,
+  DashboardSummary,
+  DailyCompletionPoint,
+  HabitAnalyticsOverview,
+  HabitCompletionStat,
+  MissedDayData,
 };
 
-export const useHabitStore = create<HabitState>()(
-  persist(
-    immer((set, get) => ({
-      habits: [],
-      logs: {},
-      
-      addHabit: (habit) => {
-        set((state) => {
-          state.habits.push(habit);
-          state.logs[habit.id] = [];
-        });
-      },
+interface HabitState {
+  userId: string | null;
+  habits: Habit[];
+  logs: Record<string, HabitLog[]>;
+  loadForUser: (userId: string) => void;
+  clear: () => void;
+  createHabit: (input: HabitUpsertInput) => void;
+  updateHabit: (habitId: string, input: HabitUpsertInput) => void;
+  trackHabit: (habitId: string, date: string, params?: HabitTrackingInput) => void;
+  deleteHabit: (habitId: string) => void;
+  calculateStreak: (habitId: string) => number;
+  calculateLongestStreak: (habitId: string) => number;
+  getCompletionRate: (habitId: string, days: number) => number;
+  getActivityCalendarData: (year: number) => ActivityDay[];
+  getWeeklyStats: (days: number) => DailyCompletionPoint[];
+  getMissedDayStats: (days: number) => MissedDayData[];
+  getHabitLeaderboard: (days: number) => HabitCompletionStat[];
+  getTodayStats: () => { completed: number; total: number; percentage: number };
+  getDashboardSummary: () => DashboardSummary;
+  getAnalyticsOverview: (days: number) => HabitAnalyticsOverview;
+}
 
-      trackHabit: (habitId, dateStr, params) => {
-        set((state) => {
-          let habitLogs = state.logs[habitId];
-          if (!habitLogs) {
-            habitLogs = [];
-            state.logs[habitId] = habitLogs;
-          }
+const emptyState = {
+  userId: null,
+  habits: [],
+  logs: {},
+};
 
-          const existingLogIndex = habitLogs.findIndex(log => log.date === dateStr);
-          const habit = state.habits.find(h => h.id === habitId);
+export const useHabitStore = create<HabitState>()((set, get) => ({
+  ...emptyState,
 
-          if (!habit) return;
+  loadForUser: (userId) => {
+    const data = habitService.getUserHabits(userId);
+    set({ userId, habits: data.habits, logs: data.logs });
+  },
 
-          if (existingLogIndex >= 0) {
-            const log = habitLogs[existingLogIndex];
-            if (habit.type === 'binary') {
-              log.completed = !log.completed;
-            } else if (habit.type === 'count' && params?.count !== undefined) {
-              log.count = Math.max(0, params.count);
-              if (habit.target && log.count >= habit.target) log.completed = true;
-              else log.completed = false;
-            } else if (habit.type === 'timer' && params?.duration !== undefined) {
-              log.duration = Math.max(0, params.duration);
-              if (habit.expectedDuration && log.duration >= habit.expectedDuration) log.completed = true;
-              else log.completed = false;
-            }
-          } else {
-            // New log
-            let newLog: HabitLog = {
-              id: Math.random().toString(36).substr(2, 9),
-              habitId,
-              date: dateStr,
-              completed: habit.type === 'binary' ? true : false,
-            };
+  clear: () => {
+    set(emptyState);
+  },
 
-            if (habit.type === 'count' && params?.count !== undefined) {
-              newLog.count = Math.max(0, params.count);
-              newLog.completed = habit.target ? newLog.count >= habit.target : false;
-            } else if (habit.type === 'timer' && params?.duration !== undefined) {
-              newLog.duration = Math.max(0, params.duration);
-              newLog.completed = habit.expectedDuration ? newLog.duration >= habit.expectedDuration : false;
-            }
+  createHabit: (input) => {
+    const userId = get().userId;
+    if (!userId) return;
+    const data = habitService.createHabit(userId, input);
+    set({ habits: data.habits, logs: data.logs });
+  },
 
-            habitLogs.push(newLog);
-          }
-        });
-      },
+  updateHabit: (habitId, input) => {
+    const userId = get().userId;
+    if (!userId) return;
+    const data = habitService.updateHabit(userId, habitId, input);
+    set({ habits: data.habits, logs: data.logs });
+  },
 
-      calculateStreak: (habitId) => {
-        const logs = get().logs[habitId];
-        if (!logs || logs.length === 0) return 0;
+  trackHabit: (habitId, date, params) => {
+    const userId = get().userId;
+    if (!userId) return;
+    const data = habitService.trackHabit(userId, habitId, date, params);
+    set({ habits: data.habits, logs: data.logs });
+  },
 
-        const todayDate = getLocalDateString(new Date());
-        let currentStreak = 0;
-        
-        // Very basic simple contiguous streak logic for demonstration
-        const sortedLogs = [...logs]
-          .filter(l => l.completed)
-          .sort((a, b) => b.date.localeCompare(a.date)); // descending dates
-        
-        if (sortedLogs.length === 0) return 0;
+  deleteHabit: (habitId) => {
+    const userId = get().userId;
+    if (!userId) return;
+    const data = habitService.deleteHabit(userId, habitId);
+    set({ habits: data.habits, logs: data.logs });
+  },
 
-        let checkDate = new Date();
-        const latest = sortedLogs[0].date;
-        const todayStr = todayDate;
-        
-        // If not completed today or yesterday, streak is broken
-        // Needs proper date-fns logic in production
-        return sortedLogs.length; 
-      }
-    })),
-    {
-      name: 'waqtify-habit-storage'
-    }
-  )
-);
+  calculateStreak: (habitId) => calculateStreak(get().logs[habitId] || []),
+
+  calculateLongestStreak: (habitId) => calculateLongestStreak(get().logs[habitId] || []),
+
+  getCompletionRate: (habitId, days) => {
+    const state = get();
+    const habit = state.habits.find((item) => item.id === habitId);
+    if (!habit) return 0;
+    return getCompletionRate(habit, state.logs[habitId] || [], days);
+  },
+
+  getActivityCalendarData: (year) => getActivityCalendarData(get().habits, get().logs, year),
+
+  getWeeklyStats: (days) => getWeeklyStats(get().habits, get().logs, days),
+
+  getMissedDayStats: (days) => getMissedDayStats(get().habits, get().logs, days),
+
+  getHabitLeaderboard: (days) => getHabitLeaderboard(get().habits, get().logs, days),
+
+  getTodayStats: () => getTodayStats(get().habits, get().logs),
+
+  getDashboardSummary: () => getDashboardSummary(get().habits, get().logs),
+
+  getAnalyticsOverview: (days) => getAnalyticsOverview(get().habits, get().logs, days),
+}));

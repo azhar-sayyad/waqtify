@@ -1,108 +1,140 @@
-import React, { useMemo } from 'react';
-import { useAuthStore } from '../stores/authStore';
+import React, { useMemo, useState } from 'react';
 import { useHabitStore } from '../stores/habitStore';
-import { Button } from '@waqtify/ui';
-import { Layout } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { formatISO, subDays } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart2, Download } from 'lucide-react';
+import { Button, Badge } from '@waqtify/ui';
+import {
+  KPICards,
+  ActivityHeatmapSection,
+  WeeklyProgressChartSection,
+  MissedDaysChart,
+  CompletionByHabitPieChart,
+  PerHabitRates,
+} from '../components/analytics';
+import { HabitLeaderboard } from '../components/HabitLeaderboard';
 
+// ─── Date range options ────────────────────────────────────────────────────
+type DateRange = 30 | 90 | 365;
+
+const DATE_RANGE_OPTIONS: { label: string; value: DateRange }[] = [
+  { label: '30d', value: 30 },
+  { label: '90d', value: 90 },
+  { label: '1yr', value: 365 },
+];
+
+// ─── Analytics Page ────────────────────────────────────────────────────────
 export function Analytics() {
-  const { user, logout } = useAuthStore();
-  const { habits, logs } = useHabitStore();
-  const navigate = useNavigate();
+  const { habits, logs, getAnalyticsOverview } = useHabitStore();
+  const [dateRange, setDateRange] = useState<DateRange>(30);
+  const analyticsOverview = useMemo(
+    () => getAnalyticsOverview(dateRange),
+    [dateRange, getAnalyticsOverview, habits, logs]
+  );
+  const worstDay = useMemo(
+    () =>
+      [...analyticsOverview.missedDays].sort((left, right) => right.misses - left.misses)[0],
+    [analyticsOverview.missedDays]
+  );
 
-  // Generate last 7 days of performance
-  const chartData = useMemo(() => {
-    const data = [];
-    const today = new Date();
-    
-    for (let i = 6; i >= 0; i--) {
-      const dateTarget = subDays(today, i);
-      const dateStr = formatISO(dateTarget, { representation: 'date' });
-      
-      let completedCount = 0;
-      let totalAssigned = habits.length;
-
-      habits.forEach(h => {
-        const hLogs = logs[h.id];
-        if (hLogs) {
-          const matchedLog = hLogs.find(l => l.date === dateStr);
-          if (matchedLog && matchedLog.completed) {
-            completedCount++;
-          }
-        }
-      });
-
-      data.push({
-        name: dateTarget.toLocaleDateString('en-US', { weekday: 'short' }),
-        completed: completedCount,
-        total: totalAssigned
-      });
-    }
-    return data;
-  }, [habits, logs]);
+  const hasData = habits.length > 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2 mr-4">
-              <Layout className="w-5 h-5 text-primary" />
-              <span className="text-xl font-bold tracking-tight">Waqtify</span>
+    <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {/* ── Enhanced Header with Gradient Background ───────────────────── */}
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-background border border-primary/20 p-6 md:p-8">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BarChart2 className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-xs font-semibold text-primary uppercase tracking-wider">Insights Engine</span>
             </div>
-            <nav className="flex items-center space-x-4 text-sm font-medium">
-              <span 
-                className="text-muted-foreground transition-colors hover:text-foreground cursor-pointer py-5" 
-                onClick={() => navigate('/')}
-              >
-                Habits
-              </span>
-              <span className="text-foreground border-b-2 border-primary py-5 cursor-pointer">
-                Analytics
-              </span>
-            </nav>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Consistency Overview</h1>
+            <p className="text-muted-foreground max-w-xl">
+              Deep-dive into your habit patterns, performance trends, and identify areas for improvement.
+            </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground hidden sm:inline-block">
-              {user?.name || 'Guest'}
-            </span>
-            <Button variant="ghost" size="sm" onClick={logout}>Sign Out</Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 space-y-8">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Performance Analytics</h2>
-          <p className="text-muted-foreground mt-1">Visualize your consistency.</p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-            <h3 className="tracking-tight text-sm font-medium text-muted-foreground">Total Habits Tracked</h3>
-            <p className="text-3xl font-bold mt-2">{habits.length}</p>
-          </div>
-          <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 md:col-span-2">
-            <h3 className="tracking-tight text-sm font-medium text-muted-foreground mb-4">Global Completion (7 Days)</h3>
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    cursor={{fill: 'transparent'}}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)' }}
-                  />
-                  <Bar dataKey="completed" fill="currentColor" className="fill-primary" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+            {/* Date range filter with enhanced styling */}
+            <div className="flex items-center gap-1 bg-background/50 backdrop-blur-sm border border-border/50 rounded-xl p-1">
+              {DATE_RANGE_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDateRange(opt.value)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                    dateRange === opt.value
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
+            <Button size="sm" variant="outline" className="gap-2 shadow-sm hover:shadow-md transition-all">
+              <Download className="w-4 h-4" />
+              Export Data
+            </Button>
           </div>
         </div>
+      </section>
 
-      </main>
+      {/* ── KPI Cards ──────────────────────────────────────────────────── */}
+      <KPICards
+        data={{
+          totalCompleted: analyticsOverview.totalCompleted,
+          overallRate: analyticsOverview.overallRate,
+          maxCurrentStreak: analyticsOverview.maxCurrentStreak,
+          maxLongestStreak: analyticsOverview.maxLongestStreak,
+          dateRange,
+        }}
+      />
+
+      {/* ── Activity Heatmap ───────────────────────────────────────────── */}
+      <ActivityHeatmapSection />
+
+      {/* ── Charts Grid ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <WeeklyProgressChartSection data={analyticsOverview.dailyCompletionSeries} />
+        <MissedDaysChart
+          data={analyticsOverview.missedDays}
+          worstDay={worstDay}
+          hasHabits={hasData}
+        />
+      </div>
+
+      {/* ── Per-Habit Breakdown ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CompletionByHabitPieChart data={analyticsOverview.completionShare} />
+        <PerHabitRates data={analyticsOverview.leaderboard} />
+      </div>
+
+      {/* ── Habit Leaderboard ──────────────────────────────────────────── */}
+      <section className="relative overflow-hidden rounded-2xl bg-card border border-border/50 shadow-lg">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="relative p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BarChart2 className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Rankings</span>
+              </div>
+              <h2 className="text-xl font-bold tracking-tight">Habit Leaderboard</h2>
+              <p className="text-sm text-muted-foreground">All habits ranked by completion rate</p>
+            </div>
+            <Badge variant="secondary" className="text-sm px-4 py-2">
+              {analyticsOverview.leaderboard.length}{' '}
+              {analyticsOverview.leaderboard.length === 1 ? 'habit' : 'habits'} tracked
+            </Badge>
+          </div>
+          <HabitLeaderboard data={analyticsOverview.leaderboard} />
+        </div>
+      </section>
     </div>
   );
 }
