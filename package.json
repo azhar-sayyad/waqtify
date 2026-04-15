@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "build": "turbo run build",
+    "build:mobile": "npm run build --workspace @waqtify/mobile",
     "dev": "turbo run dev",
+    "dev:mobile": "npm run dev --workspace @waqtify/mobile",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },

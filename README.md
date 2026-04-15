@@ -15,7 +15,7 @@ Waqtify (derived from "Waqt", meaning time) is a productivity-focused habit trac
 
 | Layer | Technology |
 | :--- | :--- |
-| Frontend | React 18, TypeScript, Vite |
+| Frontend | React 18 (Web), React Native + Expo (Mobile), TypeScript, Vite |
 | Styling | Tailwind CSS |
 | State Management | Zustand + Immer |
 | Routing | React Router v6 |
@@ -29,7 +29,8 @@ Waqtify (derived from "Waqt", meaning time) is a productivity-focused habit trac
 ```
 waqtify/
 ├── apps/
-│   └── web/          # Main React application
+│   ├── web/          # React web application
+│   └── mobile/       # React Native Expo application
 ├── packages/
 │   ├── ui/           # Shared component library
 │   ├── types/        # Shared TypeScript interfaces
@@ -61,10 +62,24 @@ npm run dev
 
 This starts all apps and packages in parallel via Turborepo. The web app will be available at `http://localhost:5173`.
 
+### Mobile Development
+
+```bash
+npm run dev:mobile
+```
+
+This starts the Expo dev server for the mobile app.
+
 ### Build
 
 ```bash
 npm run build
+```
+
+To run only the mobile build/export:
+
+```bash
+npm run build:mobile
 ```
 
 ### Lint
