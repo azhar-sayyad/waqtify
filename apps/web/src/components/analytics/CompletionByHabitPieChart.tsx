@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recha
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import type { TooltipProps } from 'recharts';
 import { PieChart as PieChartIcon } from 'lucide-react';
+import { chartTheme } from '../../lib/chartTheme';
 
 interface PieData {
   name: string;
@@ -30,7 +31,7 @@ function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) 
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   if (percent < 0.07) return null;
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
+    <text x={x} y={y} fill={chartTheme.pieLabelFill} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
       {`${Math.round(percent * 100)}%`}
     </text>
   );
@@ -78,12 +79,14 @@ export function CompletionByHabitPieChart({ data }: CompletionByHabitPieChartPro
               </Pie>
               <Tooltip
                 formatter={formatTooltipValue}
-                contentStyle={{ borderRadius: '10px', border: '1px solid hsl(240 5% 20%)', background: 'hsl(240 5% 10%)', fontSize: '12px' }}
+                contentStyle={chartTheme.tooltipContentStyle}
+                labelStyle={chartTheme.tooltipLabelStyle}
+                itemStyle={chartTheme.tooltipItemStyle}
               />
               <Legend
                 iconType="circle"
                 iconSize={8}
-                formatter={(value) => <span style={{ fontSize: 11, color: 'hsl(240 5% 65%)' }}>{value}</span>}
+                formatter={(value) => <span style={chartTheme.legendTextStyle}>{value}</span>}
               />
             </PieChart>
           </ResponsiveContainer>

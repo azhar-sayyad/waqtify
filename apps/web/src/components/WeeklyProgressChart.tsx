@@ -10,6 +10,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { DailyCompletionPoint } from '../stores/habitStore';
+import { chartTheme } from '../lib/chartTheme';
 
 interface WeeklyProgressChartProps {
   data: DailyCompletionPoint[];
@@ -52,12 +53,12 @@ export function WeeklyProgressChart({ data, target, className = '', height = 220
         <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
           <defs>
             <linearGradient id="completionGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(265 90% 72%)" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="hsl(265 90% 72%)" stopOpacity={0} />
+              <stop offset="5%" stopColor={chartTheme.seriesPrimary} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={chartTheme.seriesPrimary} stopOpacity={0} />
             </linearGradient>
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 5% 20%)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridStroke} vertical={false} />
 
           <XAxis
             dataKey="date"
@@ -66,7 +67,7 @@ export function WeeklyProgressChart({ data, target, className = '', height = 220
             axisLine={false}
             tickMargin={8}
             interval="preserveStartEnd"
-            tick={{ fill: 'hsl(240 5% 65%)' }}
+            tick={chartTheme.axisTick}
           />
           <YAxis
             domain={[0, 100]}
@@ -75,27 +76,27 @@ export function WeeklyProgressChart({ data, target, className = '', height = 220
             tickLine={false}
             axisLine={false}
             tickMargin={4}
-            tick={{ fill: 'hsl(240 5% 65%)' }}
+            tick={chartTheme.axisTick}
           />
 
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(265 90% 72%)', strokeWidth: 1, strokeDasharray: '4 4' }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: chartTheme.seriesPrimary, strokeWidth: 1, strokeDasharray: '4 4' }} />
 
           {target !== undefined && (
             <ReferenceLine
               y={target}
-              stroke="hsl(142 70% 45%)"
+              stroke={chartTheme.goal}
               strokeDasharray="4 4"
-              label={{ value: `Goal ${target}%`, position: 'right', fontSize: 10, fill: 'hsl(142 70% 45%)' }}
+              label={{ value: `Goal ${target}%`, position: 'right', fontSize: 10, fill: chartTheme.goal }}
             />
           )}
 
           <Line
             type="monotone"
             dataKey="rate"
-            stroke="hsl(265 90% 72%)"
+            stroke={chartTheme.seriesPrimary}
             strokeWidth={2.5}
             dot={false}
-            activeDot={{ r: 5, fill: 'hsl(265 90% 72%)', strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: chartTheme.seriesPrimary, strokeWidth: 0 }}
           />
         </LineChart>
       </ResponsiveContainer>

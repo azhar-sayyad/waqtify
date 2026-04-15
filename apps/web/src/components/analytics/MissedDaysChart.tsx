@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import { Activity, Info } from 'lucide-react';
+import { chartTheme } from '../../lib/chartTheme';
 
 interface MissedDay {
   name: string;
@@ -54,9 +55,9 @@ export function MissedDaysChart({ data, worstDay, hasHabits }: MissedDaysChartPr
           <div className="h-[240px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} tick={{ fill: 'hsl(240 5% 65%)' }} />
-                <YAxis fontSize={10} tickLine={false} axisLine={false} tickMargin={4} tick={{ fill: 'hsl(240 5% 65%)' }} />
-                <Tooltip content={<BarTooltip />} cursor={{ fill: 'hsl(0, 0%, 100%)', opacity: 0.4 }} />
+                <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} tick={chartTheme.axisTick} />
+                <YAxis fontSize={10} tickLine={false} axisLine={false} tickMargin={4} tick={chartTheme.axisTick} />
+                <Tooltip content={<BarTooltip />} cursor={{ fill: chartTheme.cursorFill }} />
                 <Bar dataKey="misses" radius={[6, 6, 2, 2]} barSize={28}>
                   {data.map((entry, index) => (
                     <Cell

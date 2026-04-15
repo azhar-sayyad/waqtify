@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { useHabitStore } from './stores/habitStore';
 import { useSettingsStore } from './stores/settingsStore';
+import { applyResolvedTheme, useResolvedTheme } from './lib/theme';
 import { Dashboard } from './pages/Dashboard';
 import { Landing } from './pages/Landing';
 import { Analytics } from './pages/Analytics';
@@ -32,6 +33,17 @@ const StoreBootstrapper = () => {
   return null;
 };
 
+const ThemeBootstrapper = () => {
+  const themePreference = useSettingsStore((state) => state.settings.theme);
+  const resolvedTheme = useResolvedTheme(themePreference);
+
+  useEffect(() => {
+    applyResolvedTheme(resolvedTheme);
+  }, [resolvedTheme]);
+
+  return null;
+};
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
@@ -49,6 +61,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <StoreBootstrapper />
+      <ThemeBootstrapper />
       <Routes>
         {/* Core Auth & Landing Routes */}
         <Route path="/landing" element={<PublicRoute><Landing /></PublicRoute>} />
