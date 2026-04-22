@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {useAuthStore} from '../stores/authStore';
+import {useAuthStore} from '@waqtify/core';
 import {useNavigate, useLocation} from 'react-router-dom';
 import {LayoutDashboard, BarChart2, Settings, Hexagon, Search, Bell, Menu, X} from 'lucide-react';
 import {Button} from '@waqtify/ui';

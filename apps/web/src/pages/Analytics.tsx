@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useHabitStore } from '../stores/habitStore';
+import { useHabitStore } from '@waqtify/core';
 import { BarChart2, Download } from 'lucide-react';
 import { Button, Badge } from '@waqtify/ui';
 import {

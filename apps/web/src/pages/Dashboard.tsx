@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { useAuthStore } from '../stores/authStore';
-import { useHabitStore } from '../stores/habitStore';
+import { useAuthStore } from '@waqtify/core';
+import { useHabitStore } from '@waqtify/core';
 import { HabitCard, Button, StatCard, Dialog } from '@waqtify/ui';
 import { Plus, Target, Flame, LayoutList, TrendingUp, ChevronRight, AlertTriangle, Calendar, Zap, Activity } from 'lucide-react';
 import { format } from 'date-fns';
@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { ActivityHeatmap } from '../components/ActivityHeatmap';
 import { HabitForm } from '../components/HabitForm';
 import type { Habit } from '@waqtify/types';
-import { getLocalDateString } from '../domain/habits/date';
+import { getLocalDateString } from '@waqtify/core';
 
 export function Dashboard() {
   const { user } = useAuthStore();

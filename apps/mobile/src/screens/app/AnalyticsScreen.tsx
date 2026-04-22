@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { StatCard } from '../../components/StatCard';
-import { useHabitStore } from '../../stores/habitStore';
+import { useHabitStore } from '@waqtify/core';
 import type { AppTheme } from '../../theme';
 
 type DateRange = 30 | 90 | 365;

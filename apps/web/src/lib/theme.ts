@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { AppPreferences } from '../domain/settings/types';
+import type { AppPreferences } from '@waqtify/core';
 
 export type ThemePreference = AppPreferences['theme'];
 export type ResolvedTheme = Exclude<ThemePreference, 'system'>;

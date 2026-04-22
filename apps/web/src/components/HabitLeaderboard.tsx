@@ -1,7 +1,7 @@
 import React from 'react';
 import { Flame, Trophy, TrendingUp, Medal } from 'lucide-react';
 import { Badge } from '@waqtify/ui';
-import type { HabitCompletionStat } from '../stores/habitStore';
+import type { HabitCompletionStat } from '@waqtify/core';
 
 interface HabitLeaderboardProps {
   data: HabitCompletionStat[];

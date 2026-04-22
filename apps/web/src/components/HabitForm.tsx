@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Dialog } from '@waqtify/ui';
 import type { Habit } from '@waqtify/types';
-import type { HabitUpsertInput } from '../domain/habits/types';
+import type { HabitUpsertInput } from '@waqtify/core';
 import { HabitFormFields } from '../features/habits/components/HabitFormFields';
 import { useHabitFormState } from '../features/habits/hooks/useHabitFormState';
 

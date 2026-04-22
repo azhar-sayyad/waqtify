@@ -5,7 +5,7 @@ import {
   habitFormValuesToInput,
   habitToFormValues,
   type HabitFormValues,
-} from '../../../domain/habits/form';
+} from '@waqtify/core';
 
 interface UseHabitFormStateOptions {
   initialHabit?: Habit | null;

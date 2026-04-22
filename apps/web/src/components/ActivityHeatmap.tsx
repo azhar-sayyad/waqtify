@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { useHabitStore } from '../stores/habitStore';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useHabitStore } from '@waqtify/core';
+import { useSettingsStore } from '@waqtify/core';
 import { useResolvedTheme } from '../lib/theme';
 import { ContributionMap } from '@waqtify/ui';
 

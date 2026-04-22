@@ -6,9 +6,9 @@ import { format } from 'date-fns';
 import { Screen } from '../../components/Screen';
 import { HabitCard } from '../../components/HabitCard';
 import { StatCard } from '../../components/StatCard';
-import { useAuthStore } from '../../stores/authStore';
-import { useHabitStore } from '../../stores/habitStore';
-import { getLocalDateString } from '../../domain/date';
+import { useAuthStore } from '@waqtify/core';
+import { useHabitStore } from '@waqtify/core';
+import { getLocalDateString } from '@waqtify/core';
 import type { AppStackParamList } from '../../navigation/types';
 import type { AppTheme } from '../../theme';
 

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { Screen } from '../../components/Screen';
-import { useAuthStore } from '../../stores/authStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useAuthStore } from '@waqtify/core';
+import { useSettingsStore } from '@waqtify/core';
 import type { AppTheme } from '../../theme';
 import type { AppPreferences } from '../../types';
 

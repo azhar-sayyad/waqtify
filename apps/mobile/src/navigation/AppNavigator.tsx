@@ -16,9 +16,9 @@ import { DashboardScreen } from '../screens/app/DashboardScreen';
 import { AnalyticsScreen } from '../screens/app/AnalyticsScreen';
 import { SettingsScreen } from '../screens/app/SettingsScreen';
 import { AddHabitScreen, EditHabitScreen } from '../screens/app/HabitFormScreen';
-import { useAuthStore } from '../stores/authStore';
-import { useHabitStore } from '../stores/habitStore';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useAuthStore } from '@waqtify/core';
+import { useHabitStore } from '@waqtify/core';
+import { useSettingsStore } from '@waqtify/core';
 import { getTheme, resolveThemePreference, useSystemTheme } from '../theme';
 import type {
   AppStackParamList,
@@ -68,9 +68,7 @@ function MainTabs({ theme }: { theme: ReturnType<typeof getTheme> }) {
 }
 
 export function AppNavigator() {
-  const authHydrated = useAuthStore((state) => state.hasHydrated);
-  const habitHydrated = useHabitStore((state) => state.hasHydrated);
-  const settingsHydrated = useSettingsStore((state) => state.hasHydrated);
+
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const loadHabits = useHabitStore((state) => state.loadForUser);
@@ -94,22 +92,7 @@ export function AppNavigator() {
     clearSettings();
   }, [clearHabits, clearSettings, loadHabits, loadSettings, user?.id]);
 
-  if (!authHydrated || !habitHydrated || !settingsHydrated) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: theme.background,
-          gap: 10,
-        }}
-      >
-        <ActivityIndicator color={theme.primary} />
-        <Text style={{ color: theme.mutedText }}>Loading Waqtify...</Text>
-      </View>
-    );
-  }
+
 
   return (
     <NavigationContainer theme={navTheme}>

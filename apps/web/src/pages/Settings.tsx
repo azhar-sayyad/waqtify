@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, User, Mail, Shield, Moon, Sun, Bell, Save, AlertCircle, CheckCircle, Target, Trash2, Download, Upload } from 'lucide-react';
 import { Button, Input, Label, Badge } from '@waqtify/ui';
-import { useAuthStore } from '../stores/authStore';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useAuthStore } from '@waqtify/core';
+import { useSettingsStore } from '@waqtify/core';
 import { applyThemePreference } from '../lib/theme';
 
 interface UserProfile {

@@ -9,7 +9,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
-import type { DailyCompletionPoint } from '../stores/habitStore';
+import type { DailyCompletionPoint } from '@waqtify/core';
 import { chartTheme } from '../lib/chartTheme';
 
 interface WeeklyProgressChartProps {

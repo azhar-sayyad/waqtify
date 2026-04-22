@@ -1,8 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './stores/authStore';
-import { useHabitStore } from './stores/habitStore';
-import { useSettingsStore } from './stores/settingsStore';
+import { useAuthStore, useHabitStore, useSettingsStore } from '@waqtify/core';
 import { applyResolvedTheme, useResolvedTheme } from './lib/theme';
 import { Dashboard } from './pages/Dashboard';
 import { Landing } from './pages/Landing';

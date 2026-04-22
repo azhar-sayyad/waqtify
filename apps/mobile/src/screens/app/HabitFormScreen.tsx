@@ -4,7 +4,7 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Screen } from '../../components/Screen';
 import { HabitEditorForm } from '../../components/HabitEditorForm';
-import { useHabitStore } from '../../stores/habitStore';
+import { useHabitStore } from '@waqtify/core';
 import { useHabitFormState } from '../../hooks/useHabitFormState';
 import type { AppStackParamList } from '../../navigation/types';
 import type { AppTheme } from '../../theme';

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { Screen } from '../../components/Screen';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '@waqtify/core';
 import type { AuthStackParamList } from '../../navigation/types';
 import type { AppTheme } from '../../theme';
 

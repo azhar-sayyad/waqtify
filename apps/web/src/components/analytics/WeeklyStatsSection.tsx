@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrendingUp, Calendar, CheckCircle2, CircleDashed, Award, Zap } from 'lucide-react';
-import type { DailyCompletionPoint } from '../../stores/habitStore';
+import type { DailyCompletionPoint } from '@waqtify/core';
 
 interface WeeklyStatsSectionProps {
   data: DailyCompletionPoint[];

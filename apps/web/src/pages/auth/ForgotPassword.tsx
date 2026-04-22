@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '@waqtify/core';
 import { Button, Input, Label } from '@waqtify/ui';
 import { LayoutTemplate, Mail, KeyRound, ArrowLeft, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';

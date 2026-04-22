@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHabitStore } from '../stores/habitStore';
+import { useHabitStore } from '@waqtify/core';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@waqtify/ui';
 import { ArrowLeft } from 'lucide-react';

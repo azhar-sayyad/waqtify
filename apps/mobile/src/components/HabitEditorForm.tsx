@@ -11,7 +11,7 @@ import {
   colorOptions,
   iconOptions,
   type HabitFormValues,
-} from '../domain/form';
+} from '@waqtify/core';
 import type { AppTheme } from '../theme';
 import { habitPriorityColors, type HabitPriority } from '../types';
 

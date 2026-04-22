@@ -5,7 +5,7 @@ import {
   iconOptions,
   priorityColors,
   type HabitFormValues,
-} from '../../../domain/habits/form';
+} from '@waqtify/core';
 
 interface HabitFormFieldsProps {
   values: HabitFormValues;

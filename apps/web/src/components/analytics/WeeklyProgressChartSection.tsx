@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp } from 'lucide-react';
 import { WeeklyProgressChart } from '../../components/WeeklyProgressChart';
-import type { DailyCompletionPoint } from '../../stores/habitStore';
+import type { DailyCompletionPoint } from '@waqtify/core';
 
 interface WeeklyProgressChartSectionProps {
   data: DailyCompletionPoint[];
