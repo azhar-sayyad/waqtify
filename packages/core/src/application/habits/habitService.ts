@@ -106,6 +106,7 @@ export class HabitService {
     if (habit.type === 'timer' && params?.duration !== undefined) {
       log.duration = Math.max(0, params.duration);
       log.completed = !!(habit.expectedDuration && log.duration >= habit.expectedDuration);
+      return;
     }
   }
 }
