@@ -242,15 +242,66 @@ export function HabitFormFields({
 
         <div className={variant === 'page' ? 'space-y-3' : 'space-y-2'}>
           <Label className={variant === 'page' ? styles.titleClass : 'text-xs'}>
-            Daily Reminder Time (Optional)
+            Enable Reminders
           </Label>
-          <Input
-            type="time"
-            value={values.reminderTime}
-            onChange={(event) => onFieldChange('reminderTime', event.target.value)}
-            className={`${variant === 'page' ? 'h-12 w-1/2' : 'h-10 w-1/2 text-sm'} ${fieldBaseClass}`}
+          <input
+            type="checkbox"
+            checked={values.reminderEnabled}
+            onChange={(event) => onFieldChange('reminderEnabled', event.target.checked)}
+            className="w-4 h-4"
           />
         </div>
+
+        {values.reminderEnabled && (
+          <>
+            <div className={variant === 'page' ? 'space-y-3' : 'space-y-2'}>
+              <Label className={variant === 'page' ? styles.titleClass : 'text-xs'}>
+                Reminder Time
+              </Label>
+              <Input
+                type="time"
+                value={values.reminderTime}
+                onChange={(event) => onFieldChange('reminderTime', event.target.value)}
+                className={`${variant === 'page' ? 'h-12 w-1/2' : 'h-10 w-1/2 text-sm'} ${fieldBaseClass}`}
+              />
+            </div>
+
+            <div className={variant === 'page' ? 'space-y-3' : 'space-y-2'}>
+              <Label className={variant === 'page' ? styles.titleClass : 'text-xs'}>
+                Reminder Frequency (Optional)
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="2"
+                  value={values.reminderFrequency?.interval || ''}
+                  onChange={(event) => {
+                    const interval = parseInt(event.target.value, 10);
+                    onFieldChange('reminderFrequency', {
+                      interval: Number.isNaN(interval) ? 1 : interval,
+                      unit: values.reminderFrequency?.unit || 'hours',
+                    });
+                  }}
+                  className={`${variant === 'page' ? 'h-12 w-20' : 'h-10 w-20 text-sm'} ${fieldBaseClass}`}
+                />
+                <select
+                  value={values.reminderFrequency?.unit || 'hours'}
+                  onChange={(event) =>
+                    onFieldChange('reminderFrequency', {
+                      interval: values.reminderFrequency?.interval || 1,
+                      unit: event.target.value as 'hours' | 'days',
+                    })
+                  }
+                  className={`${variant === 'page' ? 'h-12' : 'h-10 text-sm'} px-4 rounded-lg border ${fieldBaseClass}`}
+                >
+                  <option value="hours">hours</option>
+                  <option value="days">days</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className={variant === 'page' ? 'space-y-3' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}>

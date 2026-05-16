@@ -89,6 +89,11 @@ export const HabitSchema = z.object({
   target: z.number().optional(), // Used for 'count'
   expectedDuration: z.number().optional(), // Used for 'timer' in seconds
   reminderTime: z.string().optional(), // HH:MM format
+  reminderEnabled: z.boolean().default(true),
+  reminderFrequency: z.object({
+    interval: z.number().min(1),
+    unit: z.enum(['hours', 'days'])
+  }).optional(),
   startDate: z.string(),
   endDate: z.string().optional(),
   tags: z.array(z.string()).optional(),

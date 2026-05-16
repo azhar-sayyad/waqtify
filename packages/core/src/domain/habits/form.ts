@@ -21,6 +21,8 @@ export interface HabitFormValues {
   target: number;
   targetTime: number;
   reminderTime: string;
+  reminderEnabled: boolean;
+  reminderFrequency: { interval: number; unit: 'hours' | 'days' } | undefined;
   startDate: string;
   endDate: string;
   tagsInput: string;
@@ -46,6 +48,8 @@ export const createDefaultHabitFormValues = (): HabitFormValues => ({
   target: 1,
   targetTime: 10,
   reminderTime: '',
+  reminderEnabled: true,
+  reminderFrequency: undefined,
   startDate: getLocalDateString(new Date()),
   endDate: '',
   tagsInput: '',
@@ -63,6 +67,8 @@ export const habitToFormValues = (habit: Habit): HabitFormValues => ({
   target: habit.target ?? 1,
   targetTime: habit.expectedDuration ? Math.round(habit.expectedDuration / 60) : 10,
   reminderTime: habit.reminderTime || '',
+  reminderEnabled: habit.reminderEnabled ?? true,
+  reminderFrequency: habit.reminderFrequency,
   startDate: habit.startDate || getLocalDateString(new Date()),
   endDate: habit.endDate || '',
   tagsInput: habit.tags ? habit.tags.join(', ') : '',
@@ -86,6 +92,8 @@ export const habitFormValuesToInput = (values: HabitFormValues): HabitUpsertInpu
     target: values.type === 'count' ? values.target : undefined,
     expectedDuration: values.type === 'timer' ? values.targetTime * 60 : undefined,
     reminderTime: values.reminderTime || undefined,
+    reminderEnabled: values.reminderEnabled,
+    reminderFrequency: values.reminderFrequency,
     startDate: values.startDate,
     endDate: values.endDate || undefined,
     tags: tags.length > 0 ? tags : undefined,

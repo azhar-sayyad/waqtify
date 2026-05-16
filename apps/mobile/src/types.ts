@@ -82,6 +82,11 @@ export interface Habit {
   target?: number;
   expectedDuration?: number;
   reminderTime?: string;
+  reminderEnabled: boolean;
+  reminderFrequency?: {
+    interval: number;
+    unit: 'hours' | 'days';
+  };
   startDate: string;
   endDate?: string;
   tags?: string[];
@@ -109,6 +114,11 @@ export interface HabitUpsertInput {
   target?: number;
   expectedDuration?: number;
   reminderTime?: string;
+  reminderEnabled: boolean;
+  reminderFrequency?: {
+    interval: number;
+    unit: 'hours' | 'days';
+  };
   startDate: string;
   endDate?: string;
   tags?: string[];

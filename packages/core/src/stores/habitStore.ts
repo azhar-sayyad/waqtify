@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Habit, HabitLog } from '@waqtify/types';
-import { habitService } from '../application/services';
+import { habitService, notificationService } from '../application/services';
+import { useSettingsStore } from './settingsStore';
 import {
   calculateLongestStreak,
   calculateStreak,
@@ -64,6 +65,14 @@ export const useHabitStore = create<HabitState>()((set, get) => ({
   loadForUser: (userId) => {
     const data = habitService.getUserHabits(userId);
     set({ userId, habits: data.habits, logs: data.logs });
+    // Schedule reminders for loaded habits if notifications enabled
+    const globalNotifications = useSettingsStore.getState().settings.notifications;
+    if (globalNotifications) {
+      data.habits.forEach(habit => notificationService.scheduleHabitReminder(habit));
+      // Check for missed habits
+      const allLogs = Object.values(data.logs).flat();
+      notificationService.checkMissedHabits(data.habits, allLogs);
+    }
   },
 
   clear: () => {
@@ -75,6 +84,12 @@ export const useHabitStore = create<HabitState>()((set, get) => ({
     if (!userId) return;
     const data = habitService.createHabit(userId, input);
     set({ habits: data.habits, logs: data.logs });
+    // Schedule reminder for new habit if enabled
+    const globalNotifications = useSettingsStore.getState().settings.notifications;
+    if (globalNotifications) {
+      const newHabit = data.habits.find(h => !get().habits.some(existing => existing.id === h.id));
+      if (newHabit) notificationService.scheduleHabitReminder(newHabit);
+    }
   },
 
   updateHabit: (habitId, input) => {
@@ -82,6 +97,16 @@ export const useHabitStore = create<HabitState>()((set, get) => ({
     if (!userId) return;
     const data = habitService.updateHabit(userId, habitId, input);
     set({ habits: data.habits, logs: data.logs });
+    // Reschedule reminder for updated habit if enabled
+    const globalNotifications = useSettingsStore.getState().settings.notifications;
+    notificationService.cancelHabitReminder(habitId);
+    
+    if (globalNotifications) {
+      const updatedHabit = data.habits.find(h => h.id === habitId);
+      if (updatedHabit) {
+        notificationService.scheduleHabitReminder(updatedHabit);
+      }
+    }
   },
 
   trackHabit: (habitId, date, params) => {
@@ -96,6 +121,7 @@ export const useHabitStore = create<HabitState>()((set, get) => ({
     if (!userId) return;
     const data = habitService.deleteHabit(userId, habitId);
     set({ habits: data.habits, logs: data.logs });
+    notificationService.cancelHabitReminder(habitId);
   },
 
   calculateStreak: (habitId) => calculateStreak(get().logs[habitId] || []),

@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Pressable,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -216,14 +217,66 @@ export function HabitEditorForm({
         placeholderTextColor={theme.mutedText}
       />
 
-      <Text style={[styles.label, { color: theme.mutedText }]}>Reminder Time (optional)</Text>
-      <TextInput
-        value={values.reminderTime}
-        onChangeText={(text) => onFieldChange('reminderTime', text)}
-        style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.cardAlt }]}
-        placeholder="08:30"
-        placeholderTextColor={theme.mutedText}
-      />
+      <View style={styles.row}>
+        <Text style={[styles.label, { color: theme.mutedText }]}>Enable Reminders</Text>
+        <Switch
+          value={values.reminderEnabled}
+          onValueChange={(value) => onFieldChange('reminderEnabled', value)}
+        />
+      </View>
+
+      {values.reminderEnabled && (
+        <>
+          <Text style={[styles.label, { color: theme.mutedText }]}>Reminder Time</Text>
+          <TextInput
+            value={values.reminderTime}
+            onChangeText={(text) => onFieldChange('reminderTime', text)}
+            style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.cardAlt }]}
+            placeholder="08:30"
+            placeholderTextColor={theme.mutedText}
+          />
+
+          <Text style={[styles.label, { color: theme.mutedText }]}>Reminder Frequency (optional)</Text>
+          <View style={styles.row}>
+            <TextInput
+              value={values.reminderFrequency?.interval?.toString() || ''}
+              onChangeText={(text) => {
+                const interval = Number.parseInt(text, 10);
+                onFieldChange('reminderFrequency', {
+                  interval: Number.isNaN(interval) ? 1 : interval,
+                  unit: values.reminderFrequency?.unit || 'hours',
+                });
+              }}
+              keyboardType="number-pad"
+              style={[styles.input, { flex: 1, color: theme.text, borderColor: theme.border, backgroundColor: theme.cardAlt }]}
+              placeholder="2"
+              placeholderTextColor={theme.mutedText}
+            />
+            <View style={styles.rowWrap}>
+              {['hours', 'days'].map((unit) => (
+                <Pressable
+                  key={unit}
+                  onPress={() => onFieldChange('reminderFrequency', {
+                    interval: values.reminderFrequency?.interval || 1,
+                    unit: unit as 'hours' | 'days',
+                  })}
+                  style={[
+                    styles.chip,
+                    {
+                      borderColor: values.reminderFrequency?.unit === unit ? theme.primary : theme.border,
+                      backgroundColor: values.reminderFrequency?.unit === unit ? `${theme.primary}22` : theme.cardAlt,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: values.reminderFrequency?.unit === unit ? theme.primary : theme.text }}>
+                    {unit}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </>
+      )}
 
       <Text style={[styles.label, { color: theme.mutedText }]}>Tags (comma-separated)</Text>
       <TextInput
@@ -283,6 +336,12 @@ const styles = StyleSheet.create({
   textarea: {
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   rowWrap: {
     flexDirection: 'row',

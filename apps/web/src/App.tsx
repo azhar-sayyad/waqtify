@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore, useHabitStore, useSettingsStore } from '@waqtify/core';
+import { useAuthStore, useHabitStore, useSettingsStore, notificationService } from '@waqtify/core';
 import { applyResolvedTheme, useResolvedTheme } from './lib/theme';
 import { Dashboard } from './pages/Dashboard';
 import { Landing } from './pages/Landing';
@@ -13,6 +13,25 @@ import { AppLayout } from './layouts/AppLayout';
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
+
+// Set web notification implementations
+notificationService.setSendNotificationImpl(async (title: string, body: string, data?: any) => {
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, data });
+  }
+});
+
+notificationService.setRequestPermissionsImpl(async () => {
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const permission = await Notification.requestPermission();
+  return permission === 'granted';
+});
+
+// Request permissions on app load
+if ('Notification' in window) {
+  Notification.requestPermission();
+}
 
 const StoreBootstrapper = () => {
   const userId = useAuthStore((state) => state.user?.id ?? null);
